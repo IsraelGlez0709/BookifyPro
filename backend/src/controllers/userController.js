@@ -38,10 +38,12 @@ export async function loginUser(req, res) {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '8h' }
     );
 
-    res.json({ token });
+    const { password_hash, ...userSafe } = user;
+
+    res.json({ token, user: userSafe });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error en login' });
@@ -52,4 +54,25 @@ export async function me(req, res) {
   const user = await User.findUserByEmail(req.user.email);
   delete user.password_hash;
   res.json(user);
+}
+
+export async function searchUsersByEmail(req, res) {
+  try {
+    const email = req.query.email || '';
+    if (!email || email.length < 2) {
+      return res.json([]);
+    }
+    const users = await User.searchUsersByEmail(email);
+    res.json(
+      users.map((u) => ({
+        id: u.id,
+        full_name: u.full_name,
+        email: u.email,
+        phone: u.phone,
+      }))
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error buscando usuarios' });
+  }
 }

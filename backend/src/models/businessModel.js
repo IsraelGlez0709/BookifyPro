@@ -14,12 +14,19 @@ export async function getBusinessesByUser(user_id) {
   );
   return rows;
 }
-export async function getBusinessById(business_id, user_id) {
+export async function getBusinessById(business_id) {
   const [rows] = await db.query(
     `SELECT id, user_id, name, type, address, about, plan_id
        FROM businesses
-      WHERE id = ? AND user_id = ?`,
-    [business_id, user_id]
+      WHERE id = ?`,
+    [business_id]
   );
   return rows[0];
+}
+
+export async function getAllBusinesses() {
+  const [rows] = await db.query(
+    `SELECT * FROM businesses ORDER BY created_at DESC`
+  );
+  return rows;
 }

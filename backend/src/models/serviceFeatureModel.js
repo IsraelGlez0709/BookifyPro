@@ -13,3 +13,7 @@ export async function listServiceFeatures(service_id) {
   );
   return rows.map(r => r.feature);
 }
+
+export async function deleteFeaturesByService(service_id) {
+  await db.query(`DELETE FROM service_features WHERE id = ?`, [service_id]);
+}
