@@ -460,7 +460,7 @@ export default function BusinessRegister() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:4000/api/businesses/register", {
+      const res = await fetch("https://bookifypro-production.up.railway.app/api/businesses/register", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

@@ -36,7 +36,7 @@ export default function MensajesClientes({ negocio }) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:4000/api/messages/dashboard-previews?business_id=${negocio.id}`,
+          `https://bookifypro-production.up.railway.app/api/messages/dashboard-previews?business_id=${negocio.id}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
         if (!res.ok) {
@@ -75,7 +75,7 @@ export default function MensajesClientes({ negocio }) {
             <Msg key={m.conversation_id} onClick={go} title={`Ver chat con ${m.customer_name}`}>
               <Avatar>
                 {m.customer_photo ? (
-                  <img src={`http://localhost:4000/${m.customer_photo}`} alt={m.customer_name} />
+                  <img src={`https://bookifypro-production.up.railway.app/${m.customer_photo}`} alt={m.customer_name} />
                 ) : initials}
               </Avatar>
               <Texts>

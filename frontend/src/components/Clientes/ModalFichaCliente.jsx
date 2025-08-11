@@ -150,7 +150,7 @@ export default function ModalFichaCliente({ show, onClose, cliente, citas = [] }
         <ColIzq>
           <Avatar>
             {cliente.profile_photo ? (
-              <img src={`http://localhost:4000/${cliente.profile_photo}`} alt="Foto de cliente" />
+              <img src={`https://bookifypro-production.up.railway.app/${cliente.profile_photo}`} alt="Foto de cliente" />
             ) : (
               getInitials(cliente.full_name)
             )}

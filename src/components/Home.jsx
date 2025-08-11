@@ -32,7 +32,7 @@ const Page = styled.div`
 
 // ========== HEADER ==========
 const Header = styled.header`
-  background: linear-gradient(135deg, #080808 0%, #242124 50%);
+  background: linear-gradient(135deg, #3747ec 0%, #6c51ff 50%);
   padding: 1rem 2rem;
   position: sticky;
   top: 0;
@@ -581,7 +581,6 @@ export default function Home() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState(null);
   const [businesses, setBusinesses] = useState([]);
-  const [myBusinesses, setMyBusinesses] = useState([]);
   const [user, setUser] = useState({ full_name: "", profile_photo: "" });
   const [slideIdx, setSlideIdx] = useState(0);
   const profileRef = useRef();
@@ -614,16 +613,6 @@ export default function Home() {
     })
       .then((r) => r.json())
       .then((data) => setBusinesses(data))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    fetch("https://bookifypro-production.up.railway.app/api/businesses/mine", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => setMyBusinesses(data))
       .catch(console.error);
   }, []);
 
@@ -683,7 +672,7 @@ export default function Home() {
             <Logo>
               <svg height={36} viewBox="0 0 32 32" fill="none">
                 <circle cx={16} cy={16} r={16} fill="#fff" />
-                <circle cx={16} cy={16} r={13} fill="#080808" />
+                <circle cx={16} cy={16} r={13} fill="#3747EC" />
               </svg>
               <Name>
                 Bookify<BranAccent>Pro</BranAccent>
@@ -702,6 +691,7 @@ export default function Home() {
             <NavItem as={Link} to={"/home"} active={true}>
               Inicio
             </NavItem>
+            <NavItem>Explorar</NavItem>
             <NavItem
               ref={servicesBtnRef}
               onClick={() => setShowServicesMenu((v) => !v)}
@@ -724,7 +714,7 @@ export default function Home() {
               <IconButton>
                 <IoNotificationsOutline />
               </IconButton>
-              <IconButton as={Link} to={"/chat"}>
+              <IconButton>
                 <IoChatbubbleOutline />
               </IconButton>
               <Profile ref={profileRef}>
@@ -751,7 +741,6 @@ export default function Home() {
                     setExpanded={(v) =>
                       setExpandedMenu(expandedMenu === v ? null : v)
                     }
-                    myBusinesses={myBusinesses}
                   />
                 )}
               </Profile>

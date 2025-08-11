@@ -44,7 +44,7 @@ export default function Dashboard({ negocio }) {
         setLoading(true);
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:4000/api/metrics/overview?business_id=${negocio.id}`,
+          `https://bookifypro-production.up.railway.app/api/metrics/overview?business_id=${negocio.id}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
         if (!res.ok) {

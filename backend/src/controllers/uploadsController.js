@@ -87,7 +87,7 @@ export async function uploadSingle(req, res) {
     const rel = req.file.path.replace(/\\/g, "/");
 
     return res.status(201).json({
-      file_url: rel,              // <- usa esto en el front: http://localhost:4000/<file_url>
+      file_url: rel,              // <- usa esto en el front: https://bookifypro-production.up.railway.app/<file_url>
       filename: req.file.filename,
       mimetype: req.file.mimetype,
       size: req.file.size,

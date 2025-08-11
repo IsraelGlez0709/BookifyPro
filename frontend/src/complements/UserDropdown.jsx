@@ -97,7 +97,7 @@ export default function UserDropdown({user, onLogout, closeMenu, expanded, setEx
   return (
     <DropdownBox ref={ref}>
       <ProfileSection>
-        <Avatar src={user.profile_photo ? `http://localhost:4000/${user.profile_photo}` : 'https://i.pravatar.cc/100'} alt="avatar" />
+        <Avatar src={user.profile_photo ? `https://bookifypro-production.up.railway.app/${user.profile_photo}` : 'https://i.pravatar.cc/100'} alt="avatar" />
         <ProfileName>{user.full_name || "Usuario"}</ProfileName>
       </ProfileSection>
       <MenuList>

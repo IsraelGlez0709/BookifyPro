@@ -84,7 +84,7 @@ export default function AgendaSection({ negocio }) {
   useEffect(() => {
     if (!negocio?.id) return;
     const token = localStorage.getItem("token");
-    fetch(`http://localhost:4000/api/businesses/${negocio.id}`, {
+    fetch(`https://bookifypro-production.up.railway.app/api/businesses/${negocio.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -181,7 +181,7 @@ export default function AgendaSection({ negocio }) {
     if (!negocio) return;
     const token = localStorage.getItem("token");
     const res = await fetch(
-      `http://localhost:4000/api/appointments/business/${negocio.id}`,
+      `https://bookifypro-production.up.railway.app/api/appointments/business/${negocio.id}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -256,7 +256,7 @@ export default function AgendaSection({ negocio }) {
       notes: "",
     };
 
-    const res = await fetch("http://localhost:4000/api/appointments", {
+    const res = await fetch("https://bookifypro-production.up.railway.app/api/appointments", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

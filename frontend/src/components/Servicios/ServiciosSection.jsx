@@ -60,7 +60,7 @@ export default function ServiciosSection({ negocio }) {
     if (!negocio?.id) return;
     const token = localStorage.getItem("token");
 
-    fetch(`http://localhost:4000/api/businesses/${negocio.id}`, {
+    fetch(`https://bookifypro-production.up.railway.app/api/businesses/${negocio.id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((res) => res.json())
@@ -91,7 +91,7 @@ export default function ServiciosSection({ negocio }) {
       if (payload.id) {
         // EDITAR
         const res = await fetch(
-          `http://localhost:4000/api/businesses/services/${payload.id}`,
+          `https://bookifypro-production.up.railway.app/api/businesses/services/${payload.id}`,
           {
             method: "PUT",
             headers,
@@ -109,7 +109,7 @@ export default function ServiciosSection({ negocio }) {
         );
       } else {
         // CREAR
-        const res = await fetch(`http://localhost:4000/api/businesses/services`, {
+        const res = await fetch(`https://bookifypro-production.up.railway.app/api/businesses/services`, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -140,7 +140,7 @@ export default function ServiciosSection({ negocio }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:4000/api/businesses/services/${svc.id}`, {
+      const res = await fetch(`https://bookifypro-production.up.railway.app/api/businesses/services/${svc.id}`, {
         method: "DELETE",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -182,7 +182,7 @@ export default function ServiciosSection({ negocio }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:4000/api/businesses/packages/${pkg.id}`, {
+      const res = await fetch(`https://bookifypro-production.up.railway.app/api/businesses/packages/${pkg.id}`, {
         method: "DELETE",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

@@ -771,7 +771,7 @@ export default function BusinessDetail() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch(`http://localhost:4000/api/businesses/${id}`, {
+    fetch(`https://bookifypro-production.up.railway.app/api/businesses/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -900,7 +900,7 @@ export default function BusinessDetail() {
       };
 
       const res = await fetch(
-        "http://localhost:4000/api/payments/appointments/checkout",
+        "https://bookifypro-production.up.railway.app/api/payments/appointments/checkout",
         {
           method: "POST",
           headers: {
@@ -1064,7 +1064,7 @@ export default function BusinessDetail() {
                   {biz.specialists.map((sp) => (
                     <SpecCard key={sp.id}>
                       <SpecImg
-                        src={`http://localhost:4000/${sp.photo}`}
+                        src={`https://bookifypro-production.up.railway.app/${sp.photo}`}
                         alt={sp.name}
                       />
                       <SpecName>{sp.name}</SpecName>
@@ -1077,7 +1077,7 @@ export default function BusinessDetail() {
                 biz.packages.map((pkg) => (
                   <PackCard key={pkg.id}>
                     <PackImg
-                      src={`http://localhost:4000/${pkg.photo}`}
+                      src={`https://bookifypro-production.up.railway.app/${pkg.photo}`}
                       alt={pkg.name}
                     />
                     <PackInfo>
@@ -1097,7 +1097,7 @@ export default function BusinessDetail() {
                   {biz.gallery.map((url, i) => (
                     <GalleryImg
                       key={i}
-                      src={`http://localhost:4000/${url}`}
+                      src={`https://bookifypro-production.up.railway.app/${url}`}
                       alt="gallery"
                     />
                   ))}
@@ -1281,7 +1281,7 @@ export default function BusinessDetail() {
                     onClick={() => setSelSpec(sp.name)}
                   >
                     <SpecPickImg
-                      src={`http://localhost:4000/${sp.photo}`}
+                      src={`https://bookifypro-production.up.railway.app/${sp.photo}`}
                       alt={sp.name}
                       active={selSpec === sp.name}
                     />

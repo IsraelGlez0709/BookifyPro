@@ -58,7 +58,7 @@ export default function ModalPaquete({ show, onClose, negocio, paquete, onSaved 
     const fd = new FormData();
     fd.append("file", file);
     const token = localStorage.getItem("token");
-    const upRes = await fetch("http://localhost:4000/api/uploads", {
+    const upRes = await fetch("https://bookifypro-production.up.railway.app/api/uploads", {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: fd,
@@ -87,7 +87,7 @@ export default function ModalPaquete({ show, onClose, negocio, paquete, onSaved 
 
       if (paquete?.id) {
         // EDITAR
-        const res = await fetch(`http://localhost:4000/api/businesses/packages/${paquete.id}`, {
+        const res = await fetch(`https://bookifypro-production.up.railway.app/api/businesses/packages/${paquete.id}`, {
           method: "PUT",
           headers: headersJson,
           body: JSON.stringify({
@@ -103,7 +103,7 @@ export default function ModalPaquete({ show, onClose, negocio, paquete, onSaved 
         onSaved?.(updated);
       } else {
         // CREAR
-        const res = await fetch(`http://localhost:4000/api/businesses/${negocio.id}/packages`, {
+        const res = await fetch(`https://bookifypro-production.up.railway.app/api/businesses/${negocio.id}/packages`, {
           method: "POST",
           headers: headersJson,
           body: JSON.stringify({
@@ -161,7 +161,7 @@ export default function ModalPaquete({ show, onClose, negocio, paquete, onSaved 
               {file
                 ? <img src={URL.createObjectURL(file)} alt="preview"/>
                 : photoPath
-                  ? <img src={`http://localhost:4000/${photoPath}`} alt="preview"/>
+                  ? <img src={`https://bookifypro-production.up.railway.app/${photoPath}`} alt="preview"/>
                   : "Sin imagen"}
             </Preview>
           </Field>

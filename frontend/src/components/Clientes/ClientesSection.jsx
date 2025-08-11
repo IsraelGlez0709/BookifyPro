@@ -60,7 +60,7 @@ export default function ClientesSection({ negocio }) {
   useEffect(() => {
     if (!negocio?.id) return;
     const token = localStorage.getItem("token");
-    fetch(`http://localhost:4000/api/clients?business_id=${negocio.id}`, {
+    fetch(`https://bookifypro-production.up.railway.app/api/clients?business_id=${negocio.id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -84,7 +84,7 @@ export default function ClientesSection({ negocio }) {
       return;
     }
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:4000/api/clients", {
+    const res = await fetch("https://bookifypro-production.up.railway.app/api/clients", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -125,7 +125,7 @@ export default function PaymentSuccess() {
         setLoading(true);
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:4000/api/appointments/${appointmentId}`,
+          `https://bookifypro-production.up.railway.app/api/appointments/${appointmentId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.ok) {

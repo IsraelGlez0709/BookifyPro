@@ -189,7 +189,7 @@ export default function ModalCita({
               onClick={() => setSelSpec(sp.name)}
             >
               <SpecPickImg
-                src={`http://localhost:4000/${sp.photo}`}
+                src={`https://bookifypro-production.up.railway.app/${sp.photo}`}
                 alt={sp.name}
                 active={selSpec === sp.name}
               />

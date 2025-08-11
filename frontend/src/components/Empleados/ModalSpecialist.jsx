@@ -92,7 +92,7 @@ export default function ModalSpecialist({ show, onClose, especialista, negocio }
   const [name, setName] = useState(especialista?.name || "");
   const [role, setRole] = useState(especialista?.role || "");
   const [photo, setPhoto] = useState(null);
-  const [preview, setPreview] = useState(especialista?.photo ? `http://localhost:4000/${especialista.photo.replace(/\\/g, "/")}` : null);
+  const [preview, setPreview] = useState(especialista?.photo ? `https://bookifypro-production.up.railway.app/${especialista.photo.replace(/\\/g, "/")}` : null);
 
   const fileRef = useRef();
 
@@ -101,7 +101,7 @@ export default function ModalSpecialist({ show, onClose, especialista, negocio }
     setName(especialista?.name || "");
     setRole(especialista?.role || "");
     setPhoto(null);
-    setPreview(especialista?.photo ? `http://localhost:4000/${especialista.photo.replace(/\\/g, "/")}` : null);
+    setPreview(especialista?.photo ? `https://bookifypro-production.up.railway.app/${especialista.photo.replace(/\\/g, "/")}` : null);
   }, [especialista, show]);
 
   function handlePhotoChange(e) {

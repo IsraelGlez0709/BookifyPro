@@ -62,7 +62,7 @@ export default function GraficaIngresos({ negocio, kpis, loading }) {
       try {
         setFetching(true);
         const token = localStorage.getItem("token");
-        const url = `http://localhost:4000/api/payments/revenue/monthly?business_id=${negocio.id}&months=8`;
+        const url = `https://bookifypro-production.up.railway.app/api/payments/revenue/monthly?business_id=${negocio.id}&months=8`;
         const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) {
           console.error("[payments/revenue/monthly] HTTP", res.status, await res.text());

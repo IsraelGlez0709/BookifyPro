@@ -79,7 +79,7 @@ export default function PagosRecientes({ negocio }) {
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
-        const url = `http://localhost:4000/api/payments/recent?business_id=${negocio.id}&limit=6`;
+        const url = `https://bookifypro-production.up.railway.app/api/payments/recent?business_id=${negocio.id}&limit=6`;
         const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) {
           console.error("[payments/recent] HTTP", res.status, await res.text());
@@ -114,7 +114,7 @@ export default function PagosRecientes({ negocio }) {
           {items.slice(0, 6).map((p) => {
             const initials = (p.customer_name || "?")
               .split(" ").map(x => x[0]).join("").toUpperCase().slice(0,2);
-            const photo = p.customer_photo ? `http://localhost:4000/${p.customer_photo}` : null;
+            const photo = p.customer_photo ? `https://bookifypro-production.up.railway.app/${p.customer_photo}` : null;
             return (
               <Pago key={p.id}>
                 <Avatar>{photo ? <img src={photo} alt={p.customer_name}/> : initials}</Avatar>

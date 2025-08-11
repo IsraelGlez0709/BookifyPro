@@ -95,7 +95,7 @@ export default function SpecialistsTable({ empleados, onEdit, onDelete }) {
             <Row key={emp.id}>
               <Td>
                 {emp.photo ? (
-                  <Avatar src={`http://localhost:4000/${emp.photo.replace(/\\/g, "/")}`} alt={emp.name} />
+                  <Avatar src={`https://bookifypro-production.up.railway.app/${emp.photo.replace(/\\/g, "/")}`} alt={emp.name} />
                 ) : (
                   <Avatar src="/default-avatar.png" alt="Sin foto" />
                 )}

@@ -60,7 +60,7 @@ export default function PackagesTable({ packages, onEdit, onDelete }) {
             <Row key={p.id}>
               <Td>
                 {p.photo ? (
-                  <Foto src={`http://localhost:4000/${p.photo}`} alt={p.name} />
+                  <Foto src={`https://bookifypro-production.up.railway.app/${p.photo}`} alt={p.name} />
                 ) : (
                   <div style={{width:42,height:42,background:"#f8faff",borderRadius:8}} />
                 )}
