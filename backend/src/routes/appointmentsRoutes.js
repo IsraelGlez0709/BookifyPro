@@ -9,5 +9,6 @@ router.post('/', authenticateToken, createAppointment);
 router.get('/business/:id', authenticateToken, listAppointmentsByBusiness);
 router.get("/today", listAppointmentsForToday);
 router.get('/:id', getAppointmentById);
+router.get('/:businessId/availability', getAvailability);
 
 export default router;

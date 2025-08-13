@@ -90,3 +90,36 @@ export async function listAppointmentsForToday(business_id) {
   );
   return rows;
 }
+
+export async function findOccupiedSlots({ businessId, date, specialistId }) {
+  let sql = `
+    SELECT start_time
+    FROM appointments
+    WHERE business_id = ? AND date = ?
+      AND status IN ('pendiente','confirmada')
+  `;
+  const args = [businessId, date];
+
+  if (specialistId) {
+    sql += ' AND specialist_id = ?';
+    args.push(specialistId);
+  }
+
+  const [rows] = await db.query(sql, args);
+  return rows.map(r => (typeof r.start_time === 'string'
+    ? r.start_time.slice(0,5)
+    : r.start_time.toString().slice(0,5)
+  ));
+}
+
+export async function findScheduleForDay({ businessId, weekday }) {
+  const [rows] = await db.query(
+    `SELECT \`from\`, \`to\`
+       FROM business_schedules
+      WHERE business_id = ?
+        AND LOWER(LEFT(day, 3)) = ?
+      LIMIT 1`,
+    [businessId, weekday]
+  );
+  return rows[0] || null;
+}

@@ -707,6 +707,8 @@ export default function BusinessDetail() {
 
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [loadingPago, setLoadingPago] = useState(false);
+  const [takenTimes, setTakenTimes] = useState([]);
+  const [showTakenDimmed] = useState(false);
 
   const [showSendModal, setShowSendModal] = useState(false);
 
@@ -732,7 +734,7 @@ export default function BusinessDetail() {
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
-      alert("Enlace copiado al portapapeles ✅");
+      alert("Enlace copiado al portapapeles");
     } catch {
       const ta = document.createElement("textarea");
       ta.value = url;
@@ -788,7 +790,43 @@ export default function BusinessDetail() {
   }, [id]);
 
   useEffect(() => {
-    // No ejecutes nada hasta que todo exista
+    if (!biz || !selDay || !selSpec) return;
+
+    const specialist = biz.specialists.find((s) => s.name === selSpec);
+    const specialistId = specialist?.id || null;
+
+    const API = "https://bookifypro-production.up.railway.app";
+
+    const token = localStorage.getItem("token");
+
+    const url = new URL(`${API}/api/appointments/availability`);
+    url.searchParams.set("business_id", biz.id);
+    url.searchParams.set("date", selDay);
+    if (specialistId) url.searchParams.set("specialist_id", specialistId);
+
+    fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.taken)) {
+          setTakenTimes(data.taken.map((t) => t.slice(0, 5)));
+        } else if (Array.isArray(data)) {
+          setTakenTimes(
+            data.map((a) =>
+              (a.start_time || a.start || "").toString().slice(0, 5)
+            )
+          );
+        } else {
+          setTakenTimes([]);
+        }
+      })
+      .catch(() => setTakenTimes([]));
+  }, [biz, selDay, selSpec]);
+
+  useEffect(() => {
     if (!biz || !biz.services || !biz.packages) return;
 
     const svc = biz.services.find((s) => s.name === selSvc);
@@ -1253,23 +1291,44 @@ export default function BusinessDetail() {
                   horasRef.current.scrollLeft = scrollLeftHoras - walk;
                 }}
               >
-                {(diasDisponibles.find((d) => d.date === selDay)
-                  ? generarHoras(
-                      diasDisponibles.find((d) => d.date === selDay).scheduleObj
-                        .from,
-                      diasDisponibles.find((d) => d.date === selDay).scheduleObj
-                        .to
-                    )
-                  : []
-                ).map((t) => (
-                  <Pill
-                    key={t}
-                    active={selTime === t}
-                    onClick={() => setSelTime(t)}
-                  >
-                    {t}
-                  </Pill>
-                ))}
+                {(() => {
+                  const dayObj = diasDisponibles.find((d) => d.date === selDay);
+                  const allTimes = dayObj
+                    ? generarHoras(
+                        dayObj.scheduleObj.from,
+                        dayObj.scheduleObj.to
+                      )
+                    : [];
+
+                  const available = allTimes.filter(
+                    (t) => !takenTimes.includes(t)
+                  );
+
+                  const toRender = showTakenDimmed ? allTimes : available;
+
+                  return toRender.map((t) => {
+                    const isTaken = takenTimes.includes(t);
+                    return (
+                      <Pill
+                        key={t}
+                        active={selTime === t}
+                        onClick={() => !isTaken && setSelTime(t)}
+                        disabled={isTaken}
+                        style={
+                          isTaken
+                            ? {
+                                cursor: "not-allowed",
+                                opacity: 0.45,
+                                textDecoration: "line-through",
+                              }
+                            : undefined
+                        }
+                      >
+                        {t}
+                      </Pill>
+                    );
+                  });
+                })()}
               </ScrollX>
 
               <SectionTitle>Especialista</SectionTitle>
