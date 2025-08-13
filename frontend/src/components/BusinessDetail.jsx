@@ -76,6 +76,29 @@ const GlobalStyle = createGlobalStyle`
   a { text-decoration: none; }
 `;
 
+function yyyymmddLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+const DAYS = Array.from({ length: 5 }).map((_, i) => {
+  const d = new Date();
+  d.setDate(d.getDate() + i);
+  return {
+    label:
+      i === 0
+        ? "Today"
+        : d.toLocaleDateString("en-US", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          }),
+    date: yyyymmddLocal(d),
+  };
+});
+
 /* ==== LAYOUT ==== */
 const Page = styled.div`
   display: flex;
@@ -685,15 +708,16 @@ export default function BusinessDetail() {
   const [showModal, setShowModal] = useState(false);
   const [diasDisponibles, setDiasDisponibles] = useState([]);
 
-  const [selDay, setSelDay] = useState(DAYS[0].date);
-  const [selTime, setSelTime] = useState(TIMES[0]);
-  const [selSpec, setSelSpec] = useState(SPECIALISTS[0].name);
+  const [selDay, setSelDay] = useState(null);
+  const [selTime, setSelTime] = useState(null);
+  const [selSpec, setSelSpec] = useState(null);
   const [selSvc, setSelSvc] = useState(SERVICES[0].name);
 
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [loadingPago, setLoadingPago] = useState(false);
   const [takenTimes, setTakenTimes] = useState([]);
   const [showTakenDimmed] = useState(false);
+  const [diasBase, setDiasBase] = useState([]);
 
   const [showSendModal, setShowSendModal] = useState(false);
 
@@ -714,22 +738,6 @@ export default function BusinessDetail() {
       photo: "https://randomuser.me/api/portraits/women/45.jpg",
     },
   ];
-
-  const DAYS = Array.from({ length: 5 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return {
-      label:
-        i === 0
-          ? "Today"
-          : d.toLocaleDateString("en-US", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-            }),
-      date: yyyymmddLocal(d),
-    };
-  });
 
   const copiarURL = async () => {
     const url = window.location.href;
@@ -767,7 +775,7 @@ export default function BusinessDetail() {
   useEffect(() => {
     if (biz && biz.schedules) {
       const dias = getProximosDias(biz.schedules, 7);
-      setDiasDisponibles(dias);
+      setDiasBase(dias);
       setSelDay((prev) => prev ?? dias[0]?.date);
     }
     if (biz?.specialists?.length) {
@@ -791,6 +799,54 @@ export default function BusinessDetail() {
   }, [id]);
 
   useEffect(() => {
+    // Cuando ya tenemos los días base y el negocio, filtramos por días con al menos 1 slot libre
+    const filtrarDiasConSlots = async () => {
+      if (!biz || !diasBase.length) return;
+      const specialist = biz.specialists?.find((s) => s.name === selSpec);
+      const specialistId = specialist?.id || null;
+      const API = "https://bookifypro-production.up.railway.app";
+      const token = localStorage.getItem("token");
+
+      const checks = await Promise.all(
+        diasBase.map(async (d) => {
+          const url = new URL(`${API}/api/appointments/${biz.id}/availability`);
+          url.searchParams.set("date", d.date);
+          if (specialistId) url.searchParams.set("specialist_id", specialistId);
+          try {
+            const r = await fetch(url.toString(), {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            let j = {};
+            try {
+              j = await r.json();
+            } catch {}
+            const all = generarHoras(d.scheduleObj.from, d.scheduleObj.to, 30);
+            const taken = Array.isArray(j?.taken)
+              ? j.taken.map((t) => t.slice(0, 5))
+              : [];
+            const slots = Array.isArray(j?.slots) ? j.slots : null;
+            const hasSlots = Array.isArray(slots)
+              ? slots.length > 0
+              : all.some((t) => !taken.includes(t));
+            return { ...d, hasSlots };
+          } catch {
+            const all = generarHoras(d.scheduleObj.from, d.scheduleObj.to, 30);
+            return { ...d, hasSlots: all.length > 0 };
+          }
+        })
+      );
+
+      const soloConSlots = checks.filter((x) => x.hasSlots);
+      setDiasDisponibles(soloConSlots);
+      // Si el día seleccionado ya no está, mueve la selección
+      if (!soloConSlots.some((x) => x.date === selDay)) {
+        setSelDay(soloConSlots[0]?.date ?? null);
+      }
+    };
+    filtrarDiasConSlots();
+  }, [biz, selSpec, /* importante */ JSON.stringify(diasBase)]);
+
+  useEffect(() => {
     if (!biz || !selDay || !selSpec) return;
 
     const specialist = biz.specialists.find((s) => s.name === selSpec);
@@ -801,12 +857,13 @@ export default function BusinessDetail() {
 
     const url = new URL(`${API}/api/appointments/${biz.id}/availability`);
     url.searchParams.set("date", selDay);
-    if (specialistId) url.searchParams.set("specialistId", specialistId);
+    if (specialistId) url.searchParams.set("specialist_id", specialistId);
 
-    fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
+    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      })
       .then((data) => {
         if (Array.isArray(data?.taken)) {
           setTakenTimes(data.taken.map((t) => t.slice(0, 5)));
@@ -832,11 +889,32 @@ export default function BusinessDetail() {
     return <Page>…Cargando negocio…</Page>;
   }
 
-  function yyyymmddLocal(d) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${dd}`;
+  function dayIndexFromName(name) {
+    if (!name) return undefined;
+    const k = name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // sin acentos
+    const short = k.slice(0, 3); // mon, tue, mie, sab, etc.
+    const map = {
+      // ES
+      dom: 0,
+      lun: 1,
+      mar: 2,
+      mie: 3,
+      jue: 4,
+      vie: 5,
+      sab: 6,
+      // EN
+      sun: 0,
+      mon: 1,
+      tue: 2,
+      wed: 3,
+      thu: 4,
+      fri: 5,
+      sat: 6,
+    };
+    return map[short];
   }
 
   function getProximosDias(schedules, n = 7) {
@@ -865,10 +943,9 @@ export default function BusinessDetail() {
       const dayIndex = fecha.getDay();
       const diaNombre = diasSemana[dayIndex];
 
-      const scheduleObj = schedules.find((sch) => {
-        const dbShort = sch.day.slice(0, 3).toLowerCase();
-        return dbShort === diaNombre.toLowerCase();
-      });
+      const scheduleObj = schedules.find(
+        (sch) => dayIndexFromName(sch.day) === dayIndex
+      );
 
       if (scheduleObj) {
         let agregar = true;
@@ -905,7 +982,7 @@ export default function BusinessDetail() {
     const dFrom = new Date(0, 0, 0, h, m);
     const dTo = new Date(0, 0, 0, hTo, mTo);
 
-    while (dFrom <= dTo) {
+    while (dFrom < dTo) {
       let hourStr = dFrom.getHours().toString().padStart(2, "0");
       let minStr = dFrom.getMinutes().toString().padStart(2, "0");
       horas.push(`${hourStr}:${minStr}`);
