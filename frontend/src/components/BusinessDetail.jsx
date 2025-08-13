@@ -66,21 +66,6 @@ const REVIEWS = [
 ];
 
 // Para el modal: próximos 5 días
-const DAYS = Array.from({ length: 5 }).map((_, i) => {
-  const d = new Date();
-  d.setDate(d.getDate() + i);
-  return {
-    label:
-      i === 0
-        ? "Today"
-        : d.toLocaleDateString("en-US", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-          }),
-    date: d.toISOString().slice(0, 10),
-  };
-});
 // Horarios de ejemplo
 const TIMES = ["7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"];
 
@@ -730,6 +715,22 @@ export default function BusinessDetail() {
     },
   ];
 
+  const DAYS = Array.from({ length: 5 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return {
+      label:
+        i === 0
+          ? "Today"
+          : d.toLocaleDateString("en-US", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            }),
+      date: yyyymmddLocal(d),
+    };
+  });
+
   const copiarURL = async () => {
     const url = window.location.href;
     try {
@@ -767,7 +768,7 @@ export default function BusinessDetail() {
     if (biz && biz.schedules) {
       const dias = getProximosDias(biz.schedules, 7);
       setDiasDisponibles(dias);
-      setSelDay(dias[0]?.date);
+      setSelDay((prev) => prev ?? dias[0]?.date);
     }
   }, [biz]);
 
@@ -780,7 +781,9 @@ export default function BusinessDetail() {
         if (!res.ok) throw new Error("No encontrado");
         return res.json();
       })
-      .then((data) => {})
+      .then((data) => {
+        setBiz(data);
+      })
       .catch(console.error);
   }, [id]);
 
