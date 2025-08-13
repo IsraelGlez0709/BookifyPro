@@ -131,13 +131,13 @@ export async function getAvailability(req, res) {
       .toLowerCase()
       .slice(0, 3);
 
-    const schedule = await findScheduleForDay({ businessId, weekday });
+    const schedule = await Appointment.findScheduleForDay({ businessId, weekday });
     if (!schedule) {
       // No hay horario para ese día → no hay disponibilidad
       return res.json({ slots: [], taken: [], window: null });
     }
 
-    const taken = await findOccupiedSlots({ businessId, date, specialistId });
+    const taken = await Appointment.findOccupiedSlots({ businessId, date, specialistId });
     const all = buildSlots(schedule.from, schedule.to, Number(interval));
     const free = all.filter(hhmm => !taken.includes(hhmm));
 

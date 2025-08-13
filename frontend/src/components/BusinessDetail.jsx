@@ -780,12 +780,7 @@ export default function BusinessDetail() {
         if (!res.ok) throw new Error("No encontrado");
         return res.json();
       })
-      .then((data) => {
-        setBiz(data);
-        if (data.schedules?.length) {
-          setSelDay(data.schedules[0].day);
-        }
-      })
+      .then((data) => {})
       .catch(console.error);
   }, [id]);
 
@@ -796,29 +791,19 @@ export default function BusinessDetail() {
     const specialistId = specialist?.id || null;
 
     const API = "https://bookifypro-production.up.railway.app";
-
     const token = localStorage.getItem("token");
 
-    const url = new URL(`${API}/api/appointments/availability`);
-    url.searchParams.set("business_id", biz.id);
+    const url = new URL(`${API}/api/appointments/${biz.id}/availability`);
     url.searchParams.set("date", selDay);
-    if (specialistId) url.searchParams.set("specialist_id", specialistId);
+    if (specialistId) url.searchParams.set("specialistId", specialistId);
 
     fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data?.taken)) {
           setTakenTimes(data.taken.map((t) => t.slice(0, 5)));
-        } else if (Array.isArray(data)) {
-          setTakenTimes(
-            data.map((a) =>
-              (a.start_time || a.start || "").toString().slice(0, 5)
-            )
-          );
         } else {
           setTakenTimes([]);
         }
@@ -839,6 +824,13 @@ export default function BusinessDetail() {
 
   if (!biz) {
     return <Page>…Cargando negocio…</Page>;
+  }
+
+  function yyyymmddLocal(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
   }
 
   function getProximosDias(schedules, n = 7) {
@@ -886,7 +878,7 @@ export default function BusinessDetail() {
           }`;
           resultados.push({
             label,
-            date: fecha.toISOString().slice(0, 10),
+            date: yyyymmddLocal(fecha),
             dayIndex,
             scheduleObj,
           });
