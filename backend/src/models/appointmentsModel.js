@@ -114,11 +114,15 @@ export async function findOccupiedSlots({ businessId, date, specialistId }) {
 
 export async function findScheduleForDay({ businessId, weekday }) {
   const [rows] = await db.query(
-    `SELECT \`from\`, \`to\`
-       FROM business_schedules
-      WHERE business_id = ?
-        AND LOWER(LEFT(day, 3)) = ?
-      LIMIT 1`,
+    `
+    SELECT start_time AS \`from\`, end_time AS \`to\`
+    FROM business_schedules
+    WHERE business_id = ?
+      AND LOWER(LEFT(
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(day,'á','a'),'é','e'),'í','i'),'ó','o'),'ú','u')
+      ,3)) = ?
+    LIMIT 1
+    `,
     [businessId, weekday]
   );
   return rows[0] || null;

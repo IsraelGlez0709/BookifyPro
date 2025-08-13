@@ -126,7 +126,8 @@ function weekday3(dateStr) {
 export async function getAvailability(req, res) {
   try {
     const { businessId } = req.params;
-    const { date, specialistId, interval = 30 } = req.query;
+    const { date, interval = 30 } = req.query;
+    const specialistId = req.query.specialist_id || req.query.specialistId || null;
 
     if (!date) {
       return res.status(400).json({ error: "date es requerido (YYYY-MM-DD)" });
