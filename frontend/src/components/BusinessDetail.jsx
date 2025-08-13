@@ -770,6 +770,9 @@ export default function BusinessDetail() {
       setDiasDisponibles(dias);
       setSelDay((prev) => prev ?? dias[0]?.date);
     }
+    if (biz?.specialists?.length) {
+      setSelSpec(biz.specialists[0].name);
+    }
   }, [biz]);
 
   useEffect(() => {
@@ -1299,9 +1302,7 @@ export default function BusinessDetail() {
                     (t) => !takenTimes.includes(t)
                   );
 
-                  const toRender = showTakenDimmed ? allTimes : available;
-
-                  return toRender.map((t) => {
+                  return available.map((t) => {
                     const isTaken = takenTimes.includes(t);
                     return (
                       <Pill

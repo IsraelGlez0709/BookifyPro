@@ -95,18 +95,19 @@ export async function getAppointmentById(req, res) {
   try {
     const { id } = req.params;
     const appt = await Appointment.findAppointmentById(id);
-    if (!appt) return res.status(404).json({ error: 'Cita no encontrada' });
+    if (!appt) return res.status(404).json({ error: "Cita no encontrada" });
     return res.json(appt);
   } catch (err) {
-    console.error('getAppointmentById error', err);
-    return res.status(500).json({ error: 'Error obteniendo cita' });
+    console.error("getAppointmentById error", err);
+    return res.status(500).json({ error: "Error obteniendo cita" });
   }
 }
 
 export async function listAppointmentsForToday(req, res) {
   try {
     const { business_id } = req.query;
-    if (!business_id) return res.status(400).json({ error: "Falta business_id" });
+    if (!business_id)
+      return res.status(400).json({ error: "Falta business_id" });
 
     const citas = await Appointment.listAppointmentsForToday(business_id);
     res.json(citas);
@@ -116,54 +117,63 @@ export async function listAppointmentsForToday(req, res) {
   }
 }
 
+function weekday3(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const idx = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return ["dom", "lun", "mar", "mie", "jue", "vie", "sab"][idx];
+}
+
 export async function getAvailability(req, res) {
   try {
     const { businessId } = req.params;
     const { date, specialistId, interval = 30 } = req.query;
 
     if (!date) {
-      return res.status(400).json({ error: 'date es requerido (YYYY-MM-DD)' });
+      return res.status(400).json({ error: "date es requerido (YYYY-MM-DD)" });
     }
 
-    // weekday en 3 letras minúsculas (lun, mar, mie, ...)
-    const weekday = new Date(date)
-      .toLocaleDateString('es-MX', { weekday: 'short' })
-      .toLowerCase()
-      .slice(0, 3);
+    const weekday = weekday3(date);
 
-    const schedule = await Appointment.findScheduleForDay({ businessId, weekday });
+    const schedule = await Appointment.findScheduleForDay({
+      businessId,
+      weekday,
+    });
     if (!schedule) {
       // No hay horario para ese día → no hay disponibilidad
       return res.json({ slots: [], taken: [], window: null });
     }
 
-    const taken = await Appointment.findOccupiedSlots({ businessId, date, specialistId });
+    const taken = await Appointment.findOccupiedSlots({
+      businessId,
+      date,
+      specialistId,
+    });
     const all = buildSlots(schedule.from, schedule.to, Number(interval));
-    const free = all.filter(hhmm => !taken.includes(hhmm));
+    const free = all.filter((hhmm) => !taken.includes(hhmm));
 
     return res.json({
-      window: schedule,   // { from, to }
+      window: schedule, // { from, to }
       interval: Number(interval),
-      taken,              // ocupadas
-      slots: free,        // disponibles
+      taken, // ocupadas
+      slots: free, // disponibles
     });
   } catch (err) {
-    console.error('getAvailability error', err);
-    return res.status(500).json({ error: 'No se pudo obtener disponibilidad' });
+    console.error("getAvailability error", err);
+    return res.status(500).json({ error: "No se pudo obtener disponibilidad" });
   }
 }
 
 function buildSlots(from, to, interval = 30) {
   const out = [];
-  const [fh, fm] = from.split(':').map(Number);
-  const [th, tm] = to.split(':').map(Number);
+  const [fh, fm] = from.split(":").map(Number);
+  const [th, tm] = to.split(":").map(Number);
 
   const start = new Date(0, 0, 0, fh, fm);
-  const end   = new Date(0, 0, 0, th, tm);
+  const end = new Date(0, 0, 0, th, tm);
 
   while (start <= end) {
-    const hh = String(start.getHours()).padStart(2, '0');
-    const mm = String(start.getMinutes()).padStart(2, '0');
+    const hh = String(start.getHours()).padStart(2, "0");
+    const mm = String(start.getMinutes()).padStart(2, "0");
     out.push(`${hh}:${mm}`);
     start.setMinutes(start.getMinutes() + interval);
   }

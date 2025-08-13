@@ -6,10 +6,8 @@ dotenv.config();
 let pool;
 
 if (process.env.MYSQL_URL) {
-  // Usa la URL que te da Railway (privada) y configura el pool
   pool = mysql.createPool(process.env.MYSQL_URL + '?connectionLimit=10&waitForConnections=true');
 } else {
-  // Compatibilidad si estás en local con variables sueltas
   pool = mysql.createPool({
     host: process.env.DB_HOST || process.env.MYSQLHOST || '127.0.0.1',
     port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
@@ -18,6 +16,9 @@ if (process.env.MYSQL_URL) {
     database: process.env.DB_NAME || process.env.MYSQLDATABASE,
     waitForConnections: true,
     connectionLimit: 10,
+    queueLimit: 0,
+    timezone: 'local',
+    dateStrings: true
   });
 }
 
