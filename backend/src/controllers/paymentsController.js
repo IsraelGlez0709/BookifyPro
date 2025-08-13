@@ -139,32 +139,45 @@ export async function stripeWebhook(req, res) {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error('Webhook signature failed:', err.message);
+    console.error('[stripe] signature failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  console.log('[stripe] event:', event.type, 'id:', event.id);
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const appointment_id = session.metadata?.appointment_id;
+        if (!appointment_id) break;
 
-        if (appointment_id) {
-          const appt = await findAppointmentById(appointment_id);
-          if (appt?.business_id && appt?.user_id) {
-            const user = await UserModel.findUserById(appt.user_id);
-            if (user) {
-              await ensureClientForUser(appt.business_id, user);
-            }
-          }
+        const appt = await findAppointmentById(appointment_id);
+        if (appt?.business_id && appt?.user_id) {
+          const user = await UserModel.findUserById(appt.user_id);
+          if (user) await ensureClientForUser(appt.business_id, user);
         }
 
         await updatePaymentStatusByAppointment(appointment_id, {
           status: 'succeeded',
           provider_payment_id: session.id,
         });
-
         await updateAppointmentStatus(appointment_id, 'confirmada');
+        console.log('[stripe] cita confirmada por checkout.session.completed', appointment_id);
+        break;
+      }
+
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object;
+        const appointment_id = pi.metadata?.appointment_id;
+        if (!appointment_id) break;
+
+        await updatePaymentStatusByAppointment(appointment_id, {
+          status: 'succeeded',
+          provider_payment_id: pi.id,
+        });
+        await updateAppointmentStatus(appointment_id, 'confirmada');
+        console.log('[stripe] cita confirmada por payment_intent.succeeded', appointment_id);
         break;
       }
 
@@ -172,13 +185,14 @@ export async function stripeWebhook(req, res) {
       case 'checkout.session.async_payment_failed': {
         const session = event.data.object;
         const appointment_id = session.metadata?.appointment_id;
+        if (!appointment_id) break;
 
         await updatePaymentStatusByAppointment(appointment_id, {
           status: 'failed',
           provider_payment_id: session.id,
         });
-
         await updateAppointmentStatus(appointment_id, 'cancelada');
+        console.log('[stripe] cita cancelada por fallo de pago', appointment_id);
         break;
       }
 
@@ -186,10 +200,10 @@ export async function stripeWebhook(req, res) {
         break;
     }
 
-    res.json({ received: true });
+    return res.json({ received: true });
   } catch (err) {
-    console.error('Webhook processing error:', err);
-    res.status(500).send('Server error');
+    console.error('[stripe] handler error:', err);
+    return res.status(500).send('Webhook handler error');
   }
 }
 
