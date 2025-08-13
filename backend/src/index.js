@@ -16,21 +16,24 @@ import messagesRoutes from "./routes/messagesRoutes.js";
 import uploadsRoutes from "./routes/uploadsRoutes.js";
 import metricsRoutes from "./routes/metricsRoutes.js";
 import { authenticateToken } from './middleware/auth.js';
-
 import { stripeWebhook } from './controllers/paymentsController.js';
 
 dotenv.config();
-const app = express();
+
+// ⬇️ exporta la app para los tests
+export const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Stripe webhook (requiere body RAW antes de json())
 app.post(
-  '/api/payments/webhooks/stripe',
+  '/api/payments/webhooks',
   express.raw({ type: 'application/json' }),
   stripeWebhook
 );
 
+// Middlewares generales
 app.use(cors());
 app.use(express.json());
 
@@ -49,5 +52,9 @@ app.use("/api/uploads", uploadsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use("/api/metrics", authenticateToken, metricsRoutes);
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`API escuchando en puerto ${PORT}`));
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => console.log(`API escuchando en puerto ${PORT}`));
+}
+
+export default app;
