@@ -2,6 +2,7 @@
 import * as Appointment from "../models/appointmentsModel.js";
 import * as ClientModel from "../models/clientsModel.js";
 import * as UserModel from "../models/userModel.js";
+import { v4 as uuidv4 } from "uuid";
 
 export async function createAppointment(req, res) {
   try {
@@ -27,11 +28,13 @@ export async function createAppointment(req, res) {
     );
     if (!client) {
       let datosCliente = {};
+      const newClientId = uuidv4();
 
       if (user_id_from_body) {
         const usuario = await UserModel.findUserById(user_id_from_body);
         if (usuario) {
           datosCliente = {
+            id: newClientId,
             business_id,
             user_id: user_id_from_body,
             full_name: usuario.full_name,
@@ -40,6 +43,7 @@ export async function createAppointment(req, res) {
           };
         } else {
           datosCliente = {
+            id: newClientId,
             business_id,
             user_id: null,
             full_name,
@@ -49,6 +53,7 @@ export async function createAppointment(req, res) {
         }
       } else {
         datosCliente = {
+          id: newClientId,
           business_id,
           user_id: null,
           full_name,
@@ -60,8 +65,10 @@ export async function createAppointment(req, res) {
     }
 
     const user_id = client.user_id ? client.user_id : null;
+    const newAppointmentId = uuidv4();
 
     const cita = await Appointment.createAppointment({
+      id: newAppointmentId,
       business_id,
       specialist_id,
       user_id,
@@ -73,7 +80,7 @@ export async function createAppointment(req, res) {
       notes,
     });
 
-    res.status(201).json({ message: "Cita registrada", id: cita.id });
+    res.status(201).json({ message: "Cita registrada", id: newAppointmentId });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al registrar cita" });

@@ -785,7 +785,7 @@ export default function BusinessDetail() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch(`https://bookifypro-production.up.railway.app/api/businesses/${id}`, {
+    fetch(`http://localhost:4000/api/businesses/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -804,7 +804,7 @@ export default function BusinessDetail() {
       if (!biz || !diasBase.length) return;
       const specialist = biz.specialists?.find((s) => s.name === selSpec);
       const specialistId = specialist?.id || null;
-      const API = "https://bookifypro-production.up.railway.app";
+      const API = "http://localhost:4000";
       const token = localStorage.getItem("token");
 
       const checks = await Promise.all(
@@ -852,7 +852,7 @@ export default function BusinessDetail() {
     const specialist = biz.specialists.find((s) => s.name === selSpec);
     const specialistId = specialist?.id || null;
 
-    const API = "https://bookifypro-production.up.railway.app";
+    const API = "http://localhost:4000";
     const token = localStorage.getItem("token");
 
     const url = new URL(`${API}/api/appointments/${biz.id}/availability`);
@@ -1013,7 +1013,7 @@ export default function BusinessDetail() {
       };
 
       const res = await fetch(
-        "https://bookifypro-production.up.railway.app/api/payments/appointments/checkout",
+        "http://localhost:4000/api/payments/appointments/checkout",
         {
           method: "POST",
           headers: {
@@ -1047,6 +1047,26 @@ export default function BusinessDetail() {
     }
   };
 
+  const formatAddress = (addr) => {
+    if (!addr) return "";
+    if (typeof addr === "string") return addr;
+
+    const parts = [
+      `${addr.street || ''} ${addr.extNum || ''}`,
+      addr.intNum ? `Int. ${addr.intNum}` : null,
+      addr.colony ? `Col. ${addr.colony}` : null,
+      addr.city,
+      addr.state,
+      addr.zip ? `CP ${addr.zip}` : null
+    ];
+
+    return parts.filter(part => part && part.trim() !== '').join(', ');
+  };
+
+  if (!biz) {
+    return <Page>…Cargando negocio…</Page>;
+  }
+
   return (
     <>
       <GlobalStyle />
@@ -1067,7 +1087,7 @@ export default function BusinessDetail() {
               <Subtitle>{biz.about}</Subtitle>
 
               <InfoRow>
-                <IoLocationSharp /> {biz.address}
+                <IoLocationSharp /> {formatAddress(biz.address)}
               </InfoRow>
 
               <SocialInlineRow>
@@ -1177,7 +1197,7 @@ export default function BusinessDetail() {
                   {biz.specialists.map((sp) => (
                     <SpecCard key={sp.id}>
                       <SpecImg
-                        src={`https://bookifypro-production.up.railway.app/${sp.photo}`}
+                        src={`http://localhost:4000/${sp.photo}`}
                         alt={sp.name}
                       />
                       <SpecName>{sp.name}</SpecName>
@@ -1190,7 +1210,7 @@ export default function BusinessDetail() {
                 biz.packages.map((pkg) => (
                   <PackCard key={pkg.id}>
                     <PackImg
-                      src={`https://bookifypro-production.up.railway.app/${pkg.photo}`}
+                      src={`http://localhost:4000/${pkg.photo}`}
                       alt={pkg.name}
                     />
                     <PackInfo>
@@ -1210,7 +1230,7 @@ export default function BusinessDetail() {
                   {biz.gallery.map((url, i) => (
                     <GalleryImg
                       key={i}
-                      src={`https://bookifypro-production.up.railway.app/${url}`}
+                      src={`http://localhost:4000/${url}`}
                       alt="gallery"
                     />
                   ))}
@@ -1316,7 +1336,7 @@ export default function BusinessDetail() {
               <SectionTitle>{biz.name}</SectionTitle>
               <Subtitle>{biz.about}</Subtitle>
               <InfoRow>
-                <IoLocationSharp /> {biz.address}
+                <IoLocationSharp /> {formatAddress(biz.address)}
               </InfoRow>
 
               <SectionTitle>Selecciona Día</SectionTitle>
@@ -1413,7 +1433,7 @@ export default function BusinessDetail() {
                     onClick={() => setSelSpec(sp.name)}
                   >
                     <SpecPickImg
-                      src={`https://bookifypro-production.up.railway.app/${sp.photo}`}
+                      src={`http://localhost:4000/${sp.photo}`}
                       alt={sp.name}
                       active={selSpec === sp.name}
                     />

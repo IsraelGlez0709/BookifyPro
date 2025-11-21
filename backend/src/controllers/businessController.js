@@ -20,13 +20,32 @@ export async function createBusiness(req, res) {
       packages = [], gallery = [], schedules = [],
       plan_id
     } = req.body;
+
+    let addressObj = {};
+    try {
+      addressObj = JSON.parse(address);
+    } catch (err) {
+      console.error("Error al parsear dirección:", err);
+    }
+
     const businessId = uuidv4();
 
     await Biz.createBusiness({
       id: businessId,
       user_id: req.user.id,
-      name, type, address, about,
-      plan_id
+      name,
+      type,
+      about,
+      plan_id,
+      address_street: addressObj.street || '',
+      address_ext_num: addressObj.extNum || '',
+      address_int_num: addressObj.intNum || '',
+      address_colony: addressObj.colony || '',
+      address_zip: addressObj.zip || '',
+      address_city: addressObj.city || '',
+      address_state: addressObj.state || '',
+      latitude: addressObj.lat || null,
+      longitude: addressObj.lng || null
     });
 
     for (let svc of JSON.parse(services)) {
@@ -110,6 +129,17 @@ export async function getAllBusinesses(req, res) {
       biz.thumbnail = images.length > 0
         ? images[0]
         : null;
+
+      const calleYNum = `Calle ${biz.address_street || ''} ${biz.address_ext_num || ''}${biz.address_int_num ? ' Int. ' + biz.address_int_num : ''}`.trim();
+
+      const partesDireccion = [
+        calleYNum,
+        biz.address_colony ? `Col. ${biz.address_colony}` : '',
+        biz.address_city,
+        biz.address_state
+      ];
+
+      biz.address = partesDireccion.filter(part => part && part.trim() !== '').join(', ');
     }
 
     return res.json(businesses);
@@ -128,6 +158,17 @@ export async function getMyBusinesses(req, res) {
       biz.thumbnail = images.length > 0
         ? images[0]
         : null;
+
+      const calleYNum = `Calle ${biz.address_street || ''} ${biz.address_ext_num || ''}${biz.address_int_num ? ' Int. ' + biz.address_int_num : ''}`.trim();
+
+      const partesDireccion = [
+        calleYNum,
+        biz.address_colony ? `Col. ${biz.address_colony}` : '',
+        biz.address_city,
+        biz.address_state
+      ];
+
+      biz.address = partesDireccion.filter(part => part && part.trim() !== '').join(', ');
     }
 
     return res.json(businesses);
@@ -146,6 +187,22 @@ export async function getBusinessById(req, res) {
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
+    const businessData = {
+      ...biz,
+      address: {
+        street: biz.address_street,
+        extNum: biz.address_ext_num,
+        intNum: biz.address_int_num,
+        colony: biz.address_colony,
+        zip: biz.address_zip,
+        city: biz.address_city,
+        state: biz.address_state
+      }
+    }
+
+    delete businessData.address_street;
+    delete businessData.address_ext_num;
+
     const services = await Service.listServices(businessId);
     for (let svc of services) {
       svc.features = await Feature.listServiceFeatures(svc.id);
@@ -160,7 +217,7 @@ export async function getBusinessById(req, res) {
     const schedules = await Schedule.listSchedules(businessId);
 
     res.json({
-      ...biz,
+      ...businessData,
       services,
       specialists,
       packages,
@@ -359,7 +416,6 @@ export async function createPackageForBusiness(req, res) {
   }
 }
 
-// 👇 actualizar paquete
 export async function updatePackageById(req, res) {
   try {
     const { id } = req.params;
@@ -370,7 +426,6 @@ export async function updatePackageById(req, res) {
       name,
       description: description ?? "",
       price: price == null ? null : Number(String(price).replace(",", ".")),
-      // photo opcional: si no quieres tocarla, no mandes 'photo'
       ...(photo !== undefined ? { photo } : {}),
     });
 
@@ -382,7 +437,6 @@ export async function updatePackageById(req, res) {
   }
 }
 
-// 👇 eliminar paquete
 export async function deletePackageById(req, res) {
   try {
     const { id } = req.params;
@@ -391,5 +445,34 @@ export async function deletePackageById(req, res) {
   } catch (err) {
     console.error("deletePackageById", err);
     return res.status(500).json({ error: "Error al eliminar paquete" });
+  }
+}
+
+export async function updateBusiness(req, res) {
+  const { id } = req.params;
+  const { name, type, about, address_street, address_city, phone_numbers, social_links } = req.body;
+  
+  try {
+    let logoPath = undefined;
+    if (req.file) {
+      logoPath = req.file.path;
+    }
+
+    const updateData = {
+      name, type, about, address_street, address_city,
+      phone_numbers: phone_numbers ? JSON.parse(phone_numbers) : null,
+      social_links: social_links ? JSON.parse(social_links) : null
+    };
+    
+    if (logoPath) updateData.logo = logoPath;
+
+    await Biz.updateBusinessModel(id, updateData);
+
+    const updated = await Biz.getBusinessById(id);
+    res.json(updated);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error actualizando negocio" });
   }
 }

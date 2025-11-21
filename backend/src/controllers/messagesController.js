@@ -2,6 +2,7 @@
 import { db } from "../db.js";
 import * as Conv from "../models/conversationsModel.js";
 import * as Msg from "../models/messagesModel.js";
+import { v4 as uuidv4 } from "uuid";
 
 const ALLOWED_KINDS = new Set(["text", "image", "video", "audio", "document", "system"]);
 
@@ -56,7 +57,10 @@ export async function sendMessage(req, res) {
 
     await conn.beginTransaction();
 
-    const messageId = await Msg.insertMessage(conn, {
+    const newMessageId = uuidv4();
+
+    await Msg.insertMessage(conn, {
+      id: newMessageId,
       conversation_id,
       sender_id: authUserId,
       kind,
@@ -65,15 +69,14 @@ export async function sendMessage(req, res) {
       reply_to_message_id
     });
 
-    await Msg.insertAttachments(conn, messageId, attachments);
+    await Msg.insertAttachments(conn, newMessageId, attachments);
     await conn.query(`UPDATE conversations SET updated_at=CURRENT_TIMESTAMP WHERE id=?`, [conversation_id]);
 
     await conn.commit();
     conn.release?.();
 
-    // RESPONDER ya con attachments para que la UI tenga url/filename en caliente
-    const msg = await Msg.getMessageWithAttachments(messageId);
-    if (!msg) return res.status(201).json({ id: messageId }); // fallback raro, pero evita 500
+    const msg = await Msg.getMessageWithAttachments(newMessageId);
+    if (!msg) return res.status(201).json({ id: newMessageId });
     res.status(201).json(msg);
   } catch (err) {
     await (conn?.rollback?.());

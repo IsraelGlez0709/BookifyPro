@@ -12,14 +12,14 @@ export async function findClientByEmailOrPhone(business_id, email, phone) {
 }
 
 // Crea cliente
-export async function createClient({ business_id, user_id = null, full_name, email, phone }) {
-  const id = uuidv4();
+export async function createClient({ id, business_id, user_id = null, full_name, email, phone }) {
+  const clientId = id || uuidv4();
   await db.query(
     `INSERT INTO clients (id, business_id, user_id, full_name, email, phone)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, business_id, user_id, full_name, email, phone]
+    [clientId, business_id, user_id, full_name, email, phone]
   );
-  return { id, business_id, user_id, full_name, email, phone };
+  return { id: clientId, business_id, user_id, full_name, email, phone };
 }
 
 export async function suggestClientsByEmail(business_id, query) {

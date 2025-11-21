@@ -11,7 +11,8 @@ import {
   IoBarChartOutline,
   IoImageOutline,
   IoGrid,
-  IoArrowBack,            // 👈
+  IoArrowBack,
+  IoSettingsOutline,
 } from "react-icons/io5";
 
 import ClientesSection from "./Clientes/ClientesSection";
@@ -19,6 +20,7 @@ import AgendaSection from "./Agenda/AgendaSection";
 import ServiciosSection from "./Servicios/ServiciosSection";
 import SpecialistsSection from "./Empleados/SpecialistSection";
 import Dashboard from "./Dashboard/Dashboard";
+import ConfiguracionSection from "./Dashboard/ConfiguracionSection";
 
 // ============ STYLES ============
 
@@ -204,7 +206,7 @@ export default function BusinessPanel({ myBusinesses }) {
     async function fetchBusinesses() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://bookifypro-production.up.railway.app/api/businesses/mine", {
+        const res = await fetch("http://localhost:4000/api/businesses/mine", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("No se pudieron cargar los negocios");
@@ -224,6 +226,7 @@ export default function BusinessPanel({ myBusinesses }) {
     { id: "clientes", label: "Clientes", icon: <IoPeopleOutline /> },
     { id: "servicios", label: "Servicios", icon: <IoCutOutline /> },
     { id: "empleados", label: "Empleados", icon: <IoPersonOutline /> },
+    { id: "config", label: "Configuración", icon: <IoSettingsOutline /> },
   ];
 
   React.useEffect(() => {
@@ -273,7 +276,7 @@ export default function BusinessPanel({ myBusinesses }) {
                     <BizAvatar>
                       {b.thumbnail?.file_url ? (
                         <img
-                          src={`https://bookifypro-production.up.railway.app/${b.thumbnail.file_url}`}
+                          src={`http://localhost:4000/${b.thumbnail.file_url}`}
                           alt={b.name}
                         />
                       ) : (
@@ -282,7 +285,7 @@ export default function BusinessPanel({ myBusinesses }) {
                     </BizAvatar>
                     <BizInfo>
                       <span className="biz-name">{b.name}</span>
-                      <span className="biz-extra">{b.city || "Sin ciudad"}</span>
+                      <span className="biz-extra">{b.address_city || "Sin ciudad"}</span>
                     </BizInfo>
                   </BizRow>
                 ))}
@@ -334,6 +337,14 @@ export default function BusinessPanel({ myBusinesses }) {
           <ServiciosSection negocio={selectedBiz} />
         ) : activeSection === "empleados" ? (
           <SpecialistsSection negocio={selectedBiz} />
+        ) : activeSection === "config" ? (
+          <ConfiguracionSection 
+            negocio={selectedBiz} 
+            onUpdate={(updated) => {
+                setBusinesses(prev => prev.map(b => b.id === updated.id ? updated : b));
+                setSelectedBiz(updated);
+            }}
+          />
         ) : (
           <>
             <h2 style={{ color: "#232c5c" }}>

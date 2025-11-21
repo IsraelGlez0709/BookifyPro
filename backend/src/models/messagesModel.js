@@ -2,16 +2,11 @@
 import { db } from "../db.js";
 import { v4 as uuidv4 } from "uuid";
 
-/**
- * Devuelve mensajes paginados por conversación, con attachments agregados.
- * MariaDB compat: usamos GROUP_CONCAT(JSON_OBJECT(...)) y parseamos en JS.
- */
 export async function listMessagesPaged({ conversationId, cursor, limit }) {
   const params = [conversationId];
   let cursorSql = "";
 
   if (cursor) {
-    // cursor = `${created_at_iso}|${id}`
     const [createdAtIso, id] = cursor.split("|");
     cursorSql = " AND (m.created_at < ? OR (m.created_at = ? AND m.id < ?)) ";
     params.push(createdAtIso, createdAtIso, id);
@@ -45,7 +40,6 @@ export async function listMessagesPaged({ conversationId, cursor, limit }) {
 
   const [rows] = await db.query(sql, params);
 
-  // DECORAR: parsear attachments_json -> attachments:[]
   const parsed = rows.map(r => {
     const out = { ...r };
     const s = r.attachments_json;
@@ -64,14 +58,12 @@ export async function listMessagesPaged({ conversationId, cursor, limit }) {
     return out;
   });
 
-  // la consulta viene DESC; para la UI invertimos a ASC
   parsed.reverse();
   return parsed;
 }
 
 export function computeNextCursor(rows, limit) {
   if (rows.length < limit) return null;
-  // después de reverse, el más antiguo quedó primero
   const first = rows[0];
   const createdAtIso =
     first.created_at instanceof Date ? first.created_at.toISOString() : first.created_at;
@@ -79,6 +71,7 @@ export function computeNextCursor(rows, limit) {
 }
 
 export async function insertMessage(conn, {
+  id = null,
   conversation_id,
   sender_id,
   kind = "text",
@@ -86,13 +79,13 @@ export async function insertMessage(conn, {
   metadata = null,
   reply_to_message_id = null
 }) {
-  const id = uuidv4();
+  const messageId = id || uuidv4();
   await conn.query(
     `INSERT INTO messages (id, conversation_id, sender_id, kind, body, metadata, reply_to_message_id)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, conversation_id, sender_id, kind, body, metadata, reply_to_message_id]
+    [messageId, conversation_id, sender_id, kind, body, metadata, reply_to_message_id]
   );
-  return id;
+  return messageId;
 }
 
 export async function insertAttachments(conn, messageId, attachments = []) {
@@ -116,7 +109,6 @@ export async function insertAttachments(conn, messageId, attachments = []) {
   );
 }
 
-/** Mensaje + attachments por id (para responder al crear) */
 export async function getMessageWithAttachments(messageId) {
   const sql = `
     SELECT
@@ -245,11 +237,11 @@ export async function listCustomerPreviewsForDashboard(business_id, agent_user_i
     LIMIT ?
     `,
     [
-      agent_user_id,      // para unread: sender_id <> agente
-      agent_user_id,      // cp_agent
-      business_id,        // filtro negocio
-      agent_user_id,      // excluir agente como "cliente"
-      Number(limit) || 8, // límite
+      agent_user_id,
+      agent_user_id,
+      business_id,
+      agent_user_id,
+      Number(limit) || 8,
     ]
   );
   return rows;

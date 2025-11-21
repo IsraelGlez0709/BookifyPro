@@ -234,7 +234,7 @@ export default function Planes() {
     const token = localStorage.getItem("token");
     if (!token) return navigate("/", { replace: true });
 
-    fetch("https://bookifypro-production.up.railway.app/api/users/me", {
+    fetch("http://localhost:4000/api/users/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -251,7 +251,7 @@ export default function Planes() {
   // Cargar mis negocios para el dropdown del usuario
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("https://bookifypro-production.up.railway.app/api/businesses/mine", {
+    fetch("http://localhost:4000/api/businesses/mine", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -262,7 +262,7 @@ export default function Planes() {
   // Cargar planes
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("https://bookifypro-production.up.railway.app/api/plans", {
+    fetch("http://localhost:4000/api/plans", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -344,7 +344,7 @@ export default function Planes() {
                   <Avatar
                     src={
                       user.profile_photo
-                        ? `https://bookifypro-production.up.railway.app/${user.profile_photo}`
+                        ? `http://localhost:4000/${user.profile_photo}`
                         : "https://i.pravatar.cc/100"
                     }
                     alt="avatar"

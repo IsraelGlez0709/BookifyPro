@@ -10,7 +10,10 @@ export async function registerUser(req, res) {
   try {
     console.log('=== multer file ===', req.file);
     const { full_name, phone, gender, dob, email, password } = req.body;
-    const profilePhoto = req.file ? req.file.path : null;
+    let profilePhoto = null;
+    if (req.file) {
+      profilePhoto = `/uploads/${req.file.filename}`;
+    }
     console.log('guardar en BD profilePhoto=', profilePhoto);
     if (await User.findUserByEmail(email)) {
       return res.status(409).json({ error: 'Email ya registrado' });
@@ -52,7 +55,7 @@ export async function loginUser(req, res) {
 
 export async function me(req, res) {
   const user = await User.findUserByEmail(req.user.email);
-  delete user.password_hash;
+  if (user) delete user.password_hash;
   res.json(user);
 }
 

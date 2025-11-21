@@ -1,7 +1,7 @@
 // src/services/conversations.js
 import { apiGet, apiPost } from "./api";
 
-const BASE = "https://bookifypro-production.up.railway.app/api";
+const BASE = "http://localhost:4000/api";
 
 export async function ensureBusinessConversation(businessId) {
   return apiPost(`${BASE}/conversations/ensure`, {

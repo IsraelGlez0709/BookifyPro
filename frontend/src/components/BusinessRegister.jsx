@@ -355,7 +355,10 @@ export default function BusinessRegister() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
-  const [basic, setBasic] = useState({ name: "", type: "", address: "" });
+  const [basic, setBasic] = useState({ name: "", type: "", address: { street: "", extNum: "", intNum: "", colony: "", zip: "", city: "", state: "", lat: "", lng: "" } });
+  const [colonies, setColonies] = useState([]);
+  const [isLoadingCP, setIsLoadingCP] = useState(false);
+
   // Servicios: incluyen precio y siempre visibles
   const [services, setServices] = useState([{ name: "", price: "", features: [""] }]);
   // Especialistas: siempre visibles
@@ -392,7 +395,16 @@ export default function BusinessRegister() {
   const isStepValid = () => {
     switch (step) {
       case 0:
-        return basic.name && basic.type && basic.address;
+        return (
+          basic.name &&
+          basic.type &&
+          basic.address.zip &&
+          basic.address.state &&
+          basic.address.city &&
+          basic.address.colony &&
+          basic.address.street &&
+          basic.address.extNum
+        );
       case 1:
         return services.every((s) => s.name && s.price && s.features.every((f) => f));
       case 2:
@@ -425,7 +437,7 @@ export default function BusinessRegister() {
     const formData = new FormData();
     formData.append("name", basic.name);
     formData.append("type", basic.type);
-    formData.append("address", basic.address);
+    formData.append("address", JSON.stringify(basic.address));
     if (selectedPlanId) formData.append("plan_id", selectedPlanId);
 
     formData.append("services", JSON.stringify(services));
@@ -460,7 +472,7 @@ export default function BusinessRegister() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://bookifypro-production.up.railway.app/api/businesses/register", {
+      const res = await fetch("http://localhost:4000/api/businesses/register", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -473,6 +485,108 @@ export default function BusinessRegister() {
       alert("No se pudo registrar el negocio. " + err.message);
     }
   };
+
+  const updateAddress = (field, value) => {
+    setBasic((prev) => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [field]: value,
+      },
+    }))
+  };
+  
+  const handleZipChange = async (e) => {
+    const zip = e.target.value;
+    updateAddress("zip", zip);
+
+    if (zip.length === 5) {
+      setIsLoadingCP(true);
+      try {
+        const token = "8bb0e4c3-ee47-4e4f-8b82-8998ec2663a3";
+        const url = `https://api.copomex.com/query/info_cp/${zip}?token=${token}`;
+
+        console.log("Consultando URL:", url);
+
+        const req = await fetch(url);
+        const data = await req.json();
+
+        console.log("Respuesta API:", data);
+
+        let estado = "";
+        let municipio = "";
+        let listaColonias = [];
+
+        if (Array.isArray(data)) {
+          if (data.length > 0 && !data[0].error) {
+            estado = data[0].response.estado;
+            municipio = data[0].response.municipio;
+            listaColonias = data.map(item => item.response.asentamiento);
+          }
+        } else if (data && !data.error && data.response) {
+          estado = data.response.estado;
+          municipio = data.response.municipio;
+          const asentamiento = data.response.asentamiento;
+          listaColonias = Array.isArray(asentamiento) ? asentamiento : [asentamiento];
+        }
+
+        if (estado && municipio) {
+          setBasic((prev) => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              state: estado,
+              city: municipio,
+              colony: "",
+            },
+          }));
+          setColonies(listaColonias);
+
+          if (listaColonias.length === 1) {
+            updateAddress("colony", listaColonias[0]);
+          }
+        } else {
+          setColonies([]);
+          alert("Código postal no encontrado, por favor llena los campos manualmente.");
+        }
+      } catch (error) {
+        console.error("Error al consultar CP", error);
+        setColonies([]);
+      } finally {
+        setIsLoadingCP(false);
+      }
+    } else {
+      if (zip.length < 5) setColonies([]);
+    }
+  }
+
+  const fetchCoordinates = async () => {
+    const { street, extNum, city, state } = basic.address;
+
+    if (street && city && state) {
+      try {
+        const query = `${street} ${extNum}, ${city}, ${state}`;
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+          console.log("Coordenadas encontradas: ", data[0].lat, data[0].lon);
+          setBasic((prev) => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              lat: data[0].lat,
+              lng: data[0].lon,
+            },
+          }));
+        }
+      } catch (error) {
+        console.error("Error al obtener coordenadas", error);
+      }
+    }
+  }
 
   const TRACK_OFFSET = 8.3333;
   const TRACK_WIDTH = 100 - 2 * TRACK_OFFSET;
@@ -539,12 +653,96 @@ export default function BusinessRegister() {
                       <IoLocationOutline />
                       <input
                         type="text"
-                        placeholder="Dirección"
-                        value={basic.address}
-                        onChange={(e) =>
-                          setBasic((b) => ({ ...b, address: e.target.value }))
-                        }
+                        placeholder="C.P."
+                        maxLength={5}
+                        value={basic.address.zip}
+                        onChange={handleZipChange}
                         required
+                      />
+                      {isLoadingCP && <small style={{position:'absolute', bottom: -20, fontSize: 10, color: '#3747ec'}}>Buscando...</small>}
+                    </InputWrapper>
+
+                    <InputWrapper>
+                      <input
+                        type="text"
+                        placeholder="Estado"
+                        value={basic.address.state}
+                        readOnly
+                        style={{ backgroundColor: "#f4f6f8", color: "#555" }}
+                        tabIndex={-1} // Para saltar este campo con Tab
+                      />
+                    </InputWrapper>
+
+                    <InputWrapper>
+                      <input
+                        type="text"
+                        placeholder="Ciudad / Municipio"
+                        value={basic.address.city}
+                        readOnly
+                        style={{ backgroundColor: "#f4f6f8", color: "#555" }}
+                        tabIndex={-1}
+                      />
+                    </InputWrapper>
+                  </FieldRow>
+
+                  {/* FILA 3: Colonia (Select) y Calle */}
+                  <FieldRow>
+                    <InputWrapper>
+                       <IoLocationOutline />
+                       {/* Si hay colonias cargadas, mostramos SELECT, si no, INPUT normal */}
+                       {colonies.length > 0 ? (
+                          <select
+                            value={basic.address.colony}
+                            onChange={(e) => updateAddress("colony", e.target.value)}
+                            onBlur={fetchCoordinates}
+                            required
+                            style={{ appearance: 'none', background: 'white' }} // Fix visual simple
+                          >
+                            <option value="">Selecciona Colonia</option>
+                            {colonies.map((col, idx) => (
+                              <option key={idx} value={col}>{col}</option>
+                            ))}
+                          </select>
+                       ) : (
+                         <input
+                           type="text"
+                           placeholder="Colonia"
+                           value={basic.address.colony}
+                           onChange={(e) => updateAddress("colony", e.target.value)}
+                           required
+                         />
+                       )}
+                    </InputWrapper>
+
+                    <InputWrapper style={{ flex: 2 }}>
+                      <input
+                        type="text"
+                        placeholder="Calle"
+                        value={basic.address.street}
+                        onChange={(e) => updateAddress("street", e.target.value)}
+                        onBlur={fetchCoordinates}
+                        required
+                      />
+                    </InputWrapper>
+                  </FieldRow>
+
+                  {/* FILA 4: Números */}
+                  <FieldRow>
+                    <InputWrapper>
+                      <input
+                        type="text"
+                        placeholder="No. Exterior"
+                        value={basic.address.extNum}
+                        onChange={(e) => updateAddress("extNum", e.target.value)}
+                        required
+                      />
+                    </InputWrapper>
+                    <InputWrapper>
+                      <input
+                        type="text"
+                        placeholder="No. Interior (opcional)"
+                        value={basic.address.intNum}
+                        onChange={(e) => updateAddress("intNum", e.target.value)}
                       />
                     </InputWrapper>
                   </FieldRow>
@@ -1037,7 +1235,22 @@ export default function BusinessRegister() {
               <strong>Tipo:</strong> {basic.type || "-"}
             </p>
             <p>
-              <strong>Dirección:</strong> {basic.address || "-"}
+              <strong>Dirección:</strong>
+              <br />
+              {basic.address.street ? (
+                <span style={{ fontSize: "0.9em" }}>
+                  {basic.address.street} {basic.address.extNum}
+                  {basic.address.intNum ? `, Int. ${basic.address.intNum}` : ""}
+                  <br />
+                  {basic.address.colony}
+                  <br />
+                  {basic.address.city}, {basic.address.state}
+                  <br />
+                  CP: {basic.address.zip}
+                </span>
+              ) : (
+                "-"
+              )}
             </p>
           </section>
           {services.length > 0 && (

@@ -1,11 +1,7 @@
 // src/controllers/conversationsController.js
 import * as Conv from "../models/conversationsModel.js";
+import { v4 as uuidv4 } from "uuid";
 
-/**
- * Asegura/crea una conversación.
- * - business_support: un hilo por (business_id, customer_user_id)
- * - direct: un hilo por pareja de usuarios (lo manejas como ya lo tenías)
- */
 export async function ensureConversation(req, res) {
   try {
     const authUserId = req.user.id;
@@ -14,22 +10,23 @@ export async function ensureConversation(req, res) {
     if (type === "business_support") {
       if (!business_id) return res.status(400).json({ error: "business_id requerido" });
 
-      // 1) find-or-create robusto (usa el índice único para no duplicar)
+      const nextId = uuidv4();
+
       const conv = await Conv.ensureBusinessSupportConversation(
-        business_id,           // negocio
-        authUserId,            // ESTE usuario es el cliente
-        authUserId             // created_by
+        business_id,
+        authUserId,
+        authUserId,
+        nextId
       );
 
-      // 2) Asegurar participantes (INSERT IGNORE evita duplicar filas)
-      await Conv.addParticipant(conv.id, authUserId, "member"); // cliente
+      await Conv.addParticipant(conv.id, authUserId, "member");
 
       const ownerId = await Conv.findBusinessOwnerUserId(business_id);
       if (ownerId) {
-        await Conv.addParticipant(conv.id, ownerId, "agent");   // dueño/empleado
+        await Conv.addParticipant(conv.id, ownerId, "agent");
       }
 
-      return res.json(conv); // ok (si existía o se creó)
+      return res.json(conv);
     }
 
     if (type === "direct") {
@@ -41,7 +38,9 @@ export async function ensureConversation(req, res) {
       const found = await Conv.findDirectBetween(authUserId, peer_user_id);
       if (found) return res.json(found);
 
-      const convId = await Conv.createDirectConversation(authUserId);
+      const newDirectId = uuidv4();
+
+      const convId = await Conv.createDirectConversation(authUserId, newDirectId);
       await Conv.addParticipant(convId, authUserId, "member");
       await Conv.addParticipant(convId, peer_user_id, "member");
 
@@ -62,13 +61,12 @@ export async function getInbox(req, res) {
     const limit = Math.min(parseInt(req.query.limit || "50", 10), 100);
 
     const rows = await Conv.getInboxRows(authUserId, limit);
-    // rows trae conversaciones; enriquecemos cada una con display fields
     const enriched = await Promise.all(rows.map(async (conv) => {
       try {
         const { display_name, display_avatar } = await resolveDisplayFields(conv, authUserId);
         return { ...conv, display_name, display_avatar };
       } catch {
-        return conv; // fallback si algo falla
+        return conv;
       }
     }));
 
@@ -94,7 +92,7 @@ export async function getConversationDetail(req, res) {
 
     let display_name = conv.title || null;
     let display_avatar = null;
-    let display_context = null;            // 👈 NUEVO
+    let display_context = null;
 
     if (conv.type === "business_support") {
       const biz = await Conv.getBusinessBasic(conv.business_id);
@@ -109,7 +107,7 @@ export async function getConversationDetail(req, res) {
           participants.find(p => p.user_id !== authUserId);
         display_name   = customer?.full_name || "Cliente";
         display_avatar = customer?.profile_photo || null;
-        display_context = biz?.name || null; // 👈 nombre del negocio
+        display_context = biz?.name || null;
       } else {
         display_name   = biz?.name || "Soporte";
         display_avatar = biz?.logo || null;
@@ -123,7 +121,7 @@ export async function getConversationDetail(req, res) {
       display_name = conv.title || "Grupo";
     }
 
-    res.json({ ...conv, participants, display_name, display_avatar, display_context }); // 👈
+    res.json({ ...conv, participants, display_name, display_avatar, display_context });
   } catch (err) {
     console.error("getConversationDetail error", err);
     res.status(500).json({ error: "Error obteniendo detalle" });
@@ -171,7 +169,6 @@ async function resolveDisplayFields(conv, authUserId) {
 
   if (conv.type === "business_support") {
     const biz = await Conv.getBusinessBasic(conv.business_id);
-    // ¿es agent/owner?
     const ownerId = await Conv.findBusinessOwnerUserId(conv.business_id);
     const isAgent =
       participants.some(p => p.user_id === authUserId && p.role === "agent") ||
@@ -183,7 +180,6 @@ async function resolveDisplayFields(conv, authUserId) {
         participants.find(p => p.role !== "agent" && p.user_id !== authUserId) ||
         participants.find(p => p.user_id !== authUserId);
 
-      // si no viene en participants, consulta directo users
       const userBasic =
         (customer?.full_name || customer?.profile_photo)
           ? customer
@@ -199,7 +195,6 @@ async function resolveDisplayFields(conv, authUserId) {
   } else if (conv.type === "direct") {
     const other = participants.find(p => p.user_id !== authUserId) || null;
     if (other) {
-      // si participants no trae foto, buscamos al user
       const basic = (other.profile_photo || other.full_name)
         ? other
         : await Conv.getUserBasic(other.user_id);

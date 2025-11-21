@@ -1,0 +1,14 @@
+{
+  "name": "bookifypro-reminders-local",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "node reminderWorker.mjs",
+    "once": "node reminderWorker.mjs --run-once"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.11.3",
+    "node-cron": "^3.0.3"
+  }
+}

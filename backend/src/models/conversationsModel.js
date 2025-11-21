@@ -29,14 +29,14 @@ export async function findBusinessSupportForUser(businessId, userId) {
   return rows[0] || null;
 }
 
-export async function createBusinessSupportConversation({ businessId, createdBy }) {
-  const id = uuidv4();
+export async function createBusinessSupportConversation({ id = null, businessId, createdBy }) {
+  const newId = id || uuidv4();
   await db.query(
     `INSERT INTO conversations (id, type, business_id, created_by)
      VALUES (?, 'business_support', ?, ?)`,
-    [id, businessId, createdBy]
+    [newId, businessId, createdBy]
   );
-  return id;
+  return newId;
 }
 
 export async function addParticipant(conversationId, userId, role = "member") {
@@ -71,13 +71,13 @@ export async function findDirectBetween(userA, userB) {
   return rows[0] || null;
 }
 
-export async function createDirectConversation(createdBy) {
-  const id = uuidv4();
+export async function createDirectConversation(createdBy, id = null) {
+  const newId = id || uuidv4();
   await db.query(
     `INSERT INTO conversations (id, type, created_by) VALUES (?, 'direct', ?)`,
-    [id, createdBy]
+    [newId, createdBy]
   );
-  return id;
+  return newId;
 }
 
 export async function getInboxRows(userId, limit = 50) {
@@ -158,7 +158,7 @@ export async function touchConversation(conversationId) {
   await db.query(`UPDATE conversations SET updated_at=CURRENT_TIMESTAMP WHERE id=?`, [conversationId]);
 }
 
-export async function ensureBusinessSupportConversation(businessId, customerUserId, createdBy) {
+export async function ensureBusinessSupportConversation(businessId, customerUserId, createdBy, id = null) {
   let [rows] = await db.query(
     `SELECT * FROM conversations 
      WHERE type='business_support' AND business_id=? AND customer_user_id=?
@@ -167,12 +167,12 @@ export async function ensureBusinessSupportConversation(businessId, customerUser
   );
   if (rows[0]) return rows[0];
 
-  const id = uuidv4();
+  const newId = id || uuidv4();
 
   await db.query(
     `INSERT IGNORE INTO conversations (id, type, business_id, customer_user_id, created_by)
      VALUES (?, 'business_support', ?, ?, ?)`,
-    [id, businessId, customerUserId, createdBy]
+    [newId, businessId, customerUserId, createdBy]
   );
 
   [rows] = await db.query(
@@ -218,7 +218,6 @@ export async function getBusinessPrimaryImage(businessId) {
     FROM gallery_images
     WHERE business_id=?
     ORDER BY
-      -- si tienes una bandera tipo is_cover / is_primary, ponla arriba
       position IS NULL, position ASC,
       created_at ASC
     LIMIT 1

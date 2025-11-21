@@ -19,7 +19,8 @@ import {
   deleteService,
   createPackageForBusiness,
   updatePackageById,
-  deletePackageById
+  deletePackageById,
+  updateBusiness
 } from "../controllers/businessController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -52,6 +53,7 @@ router.get("/mine", authenticateToken, getMyBusinesses);
 router.get("/services", listServices);
 router.get("/specialists", listSpecialists);
 router.get("/:id", getBusinessById);
+router.put("/:id/update", authenticateToken, upload.single("logo"), updateBusiness);
 
 router.post("/services", createService);
 router.put("/services/:id", updateService);

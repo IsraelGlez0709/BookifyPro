@@ -1,6 +1,6 @@
 // src/components/Home.jsx
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import styled, { createGlobalStyle } from "styled-components";
 import {
@@ -17,6 +17,30 @@ import UserDropdown from "../complements/UserDropdown";
 import ServicesDropdown from "../complements/ServiceDropdown";
 import AutocompleteMexico from "../complements/AutocompleteMexico";
 import mexicoData from "../data/México.json";
+
+// ========== HELPERS ==========
+
+// Fórmula de Haversine para calcular distancia en km entre dos coordenadas
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  
+  const R = 6371; // Radio de la tierra en km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distancia en km
+}
+
+const normalizeText = (text) => {
+  if (!text) return "";
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+};
 
 // ========== GLOBAL STYLES ==========
 const GlobalStyle = createGlobalStyle`
@@ -125,30 +149,6 @@ const NavItem = styled.div`
   text-decoration: none;
 `;
 
-const NavDropdown = styled.ul`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: #fff;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-  min-width: 160px;
-  z-index: 95;
-`;
-
-const NavDropdownItem = styled.li`
-  padding: 0.6rem 1rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  color: #373737;
-  &:hover {
-    background: #f0f4ff;
-  }
-`;
-
 const IconGroup = styled.div`
   position: absolute;
   right: 2rem;
@@ -191,29 +191,6 @@ const Avatar = styled.img`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-`;
-
-const Dropdown = styled.ul`
-  position: absolute;
-  top: 120%;
-  right: 0;
-  background: #fff;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-  min-width: 150px;
-  z-index: 95;
-  li {
-    padding: 0.6rem 1rem;
-    cursor: pointer;
-    font-size: 0.85rem;
-    border-radius: 3px;
-    &:hover {
-      background: #f0f4ff;
-    }
-  }
 `;
 
 // ========== SLIDER ==========
@@ -501,75 +478,16 @@ const CloseBtn = styled.button`
   &:hover { color: #3747EC; }
 `;
 
-// ========== MOCK DATA ==========
+// ========== MOCK DATA (para secciones estáticas) ==========
 const banners = [
-  {
-    img: "https://insademexico.mx/wp-content/uploads/2018/09/Art%C3%ADculos-promocionales-1.jpg",
-    title: "ÚLTIMAS PROMOS",
-    subtitle: "¡No te las pierdas!",
-  },
-  {
-    img: "https://insademexico.mx/wp-content/uploads/2018/06/Mejores-art%C3%ADculos-promocionales.jpg",
-    title: "OFERTAS ESPECIALES",
-    subtitle: "Solo por tiempo limitado",
-  },
-  {
-    img: "https://promo-shop.com.mx/wp-content/uploads/catalogo-promocionales-2021.jpg",
-    title: "NUEVA TEMPORADA",
-    subtitle: "Descubre novedades",
-  },
+  { img: "https://insademexico.mx/wp-content/uploads/2018/09/Art%C3%ADculos-promocionales-1.jpg", title: "ÚLTIMAS PROMOS", subtitle: "¡No te las pierdas!" },
+  { img: "https://insademexico.mx/wp-content/uploads/2018/06/Mejores-art%C3%ADculos-promocionales.jpg", title: "OFERTAS ESPECIALES", subtitle: "Solo por tiempo limitado" },
+  { img: "https://promo-shop.com.mx/wp-content/uploads/catalogo-promocionales-2021.jpg", title: "NUEVA TEMPORADA", subtitle: "Descubre novedades" },
 ];
 const specialistsData = [
-  {
-    id: 1,
-    name: "Kathryn Murphy",
-    role: "Hair Stylist",
-    img: "https://randomuser.me/api/portraits/women/68.jpg",
-  },
-  {
-    id: 2,
-    name: "Esther Howard",
-    role: "Nail Artist",
-    img: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-  {
-    id: 3,
-    name: "Carlos Díaz",
-    role: "Barber",
-    img: "https://randomuser.me/api/portraits/men/83.jpg",
-  },
-];
-const salonsData = [
-  {
-    id: 1,
-    name: "Salon Glam",
-    img: "https://thehappening.com/wp-content/uploads/2024/02/captura-de-pantalla-2023-05-17-a-la-s-52813-pm-1.jpg",
-    desc: "Expertos en estilo y diseño de cabello",
-    address: "Av. Reforma 123, Col. Juárez, CDMX, México",
-    hours: "10 am - 8 pm",
-    travel: "15 min",
-    distance: "1.5 km",
-  },
-  {
-    id: 2,
-    name: "Estética Bella",
-    img: "https://thehappening.com/wp-content/uploads/2024/02/captura-de-pantalla-2023-05-17-a-la-s-52813-pm-1.jpg",
-    desc: "Tratamientos faciales y corporales premium",
-    address: "Calle Luna 45, Col. Centro, GDL, México",
-    hours: "9 am - 7 pm",
-    travel: "20 min",
-    distance: "2.1 km",
-  },
-  {
-    id: 3,
-    name: "Spa Zen",
-    img: "https://thehappening.com/wp-content/uploads/2024/02/captura-de-pantalla-2023-05-17-a-la-s-52813-pm-1.jpg",
-    desc: "Relajación total con masajes especializados",
-    address: "Paseo del Río 200, Col. Roma, MTY, México",
-    hours: "11 am - 9 pm",
-    travel: "18 min",
-    distance: "1.8 km",
-  },
+  { id: 1, name: "Kathryn Murphy", role: "Hair Stylist", img: "https://randomuser.me/api/portraits/women/68.jpg" },
+  { id: 2, name: "Esther Howard", role: "Nail Artist", img: "https://randomuser.me/api/portraits/women/65.jpg" },
+  { id: 3, name: "Carlos Díaz", role: "Barber", img: "https://randomuser.me/api/portraits/men/83.jpg" },
 ];
 
 // ========== COMPONENTE PRINCIPAL ==========
@@ -580,20 +498,27 @@ export default function Home() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState(null);
+  
+  // DATOS
   const [businesses, setBusinesses] = useState([]);
   const [myBusinesses, setMyBusinesses] = useState([]);
   const [user, setUser] = useState({ full_name: "", profile_photo: "" });
+  
+  // UI STATES
   const [slideIdx, setSlideIdx] = useState(0);
   const profileRef = useRef();
-
-  // hooks de localización
+  
+  // LOCALIZACIÓN
   const [manualModal, setManualModal] = useState(false);
-  const [userLocation, setUserLocation] = useState(null);
+  const [userLocation, setUserLocation] = useState(null); // { lat, lng }
+  const [currentCity, setCurrentCity] = useState("");
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
+  // 1. Auth Check
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return navigate("/", { replace: true });
-    fetch("https://bookifypro-production.up.railway.app/api/users/me", {
+    fetch("http://localhost:4000/api/users/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -607,9 +532,10 @@ export default function Home() {
       .catch(() => navigate("/", { replace: true }));
   }, [navigate]);
 
+  // 2. Cargar Negocios
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("https://bookifypro-production.up.railway.app/api/businesses", {
+    fetch("http://localhost:4000/api/businesses", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -619,7 +545,7 @@ export default function Home() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("https://bookifypro-production.up.railway.app/api/businesses/mine", {
+    fetch("http://localhost:4000/api/businesses/mine", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -627,6 +553,7 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
+  // 3. Click Outside Profile
   useEffect(() => {
     const handler = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -637,21 +564,46 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // 4. Recuperar ubicación guardada
   useEffect(() => {
     const savedLoc = JSON.parse(localStorage.getItem("user_location"));
-    if (savedLoc) setUserLocation(savedLoc);
+    const savedCity = localStorage.getItem("user_city");
+    
+    if (savedLoc) {
+      setUserLocation(savedLoc);
+      setHasLocationPermission(true);
+    }
+    if (savedCity) {
+      setCurrentCity(savedCity);
+      setHasLocationPermission(true);
+    }
   }, []);
 
+  // 5. Lógica de Geo-Localización
   function requestGeolocation() {
     if (!navigator.geolocation) {
       alert("Tu navegador no soporta geolocalización.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
+        setHasLocationPermission(true);
         localStorage.setItem("user_location", JSON.stringify(loc));
+
+        // Obtener nombre de ciudad (Reverse Geocoding)
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.lat}&lon=${loc.lng}`);
+          const data = await res.json();
+          const city = data.address.city || data.address.town || data.address.village || data.address.municipality || "";
+          if (city) {
+            setCurrentCity(city);
+            localStorage.setItem("user_city", city);
+          }
+        } catch (e) {
+          console.error("Error obteniendo ciudad", e);
+        }
       },
       (err) => {
         setManualModal(true);
@@ -660,8 +612,15 @@ export default function Home() {
   }
 
   function handleManualSelection(selection) {
-    setUserLocation(selection);
-    localStorage.setItem("user_location", JSON.stringify(selection));
+    // selection suele ser "Ciudad, Estado, Pais"
+    // Guardamos la ciudad y marcamos que tenemos ubicación (aunque no tengamos lat/lng precisas)
+    const cityName = selection.split(",")[0].trim();
+    setCurrentCity(cityName);
+    setHasLocationPermission(true);
+    localStorage.setItem("user_city", cityName);
+    // Limpiamos lat/lng previos si cambiamos a manual para no mezclar datos
+    setUserLocation(null); 
+    localStorage.removeItem("user_location");
     setManualModal(false);
   }
 
@@ -672,6 +631,51 @@ export default function Home() {
 
   const prev = () => setSlideIdx((i) => (i === 0 ? banners.length - 1 : i - 1));
   const next = () => setSlideIdx((i) => (i === banners.length - 1 ? 0 : i + 1));
+
+  // --- FILTRO INTELIGENTE DE CERCANÍA ---
+  const nearbyBusinesses = useMemo(() => {
+    if (!hasLocationPermission) return [];
+
+    return businesses
+      .map((biz) => {
+        let distance = null;
+        let isMatch = false;
+
+        // Prioridad 1: Coordenadas GPS exactas
+        if (userLocation && biz.latitude && biz.longitude) {
+          distance = calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            parseFloat(biz.latitude),
+            parseFloat(biz.longitude)
+          );
+          // Consideramos "cerca" si está a menos de 50km (ajustable)
+          if (distance !== null && distance < 50) isMatch = true;
+        } 
+        // Prioridad 2: Coincidencia por nombre de ciudad
+        else if (currentCity) {
+           // Buscamos si la dirección del negocio contiene la ciudad seleccionada
+           const fullAddr = normalizeText(biz.address || "");
+           const cityNorm = normalizeText(currentCity);
+           if (fullAddr.includes(cityNorm)) {
+             isMatch = true;
+             // Sin distancia numérica exacta, pero match válido
+           }
+        }
+
+        return { ...biz, distance, isMatch };
+      })
+      .filter((item) => item.isMatch)
+      .sort((a, b) => {
+        // Ordenar por distancia si ambos la tienen
+        if (a.distance !== null && b.distance !== null) return a.distance - b.distance;
+        // Si uno tiene distancia y el otro no, el de distancia va primero
+        if (a.distance !== null) return -1;
+        if (b.distance !== null) return 1;
+        return 0;
+      });
+  }, [businesses, userLocation, currentCity, hasLocationPermission]);
+
 
   return (
     <>
@@ -689,8 +693,20 @@ export default function Home() {
                 Bookify<BranAccent>Pro</BranAccent>
               </Name>
             </Logo>
-            <LocationSelector>
-              <IoLocationSharp size={18} /> Tu ciudad, MX <IoChevronDown size={16} />
+            <LocationSelector onClick={() => setManualModal(true)}>
+              <IoLocationSharp size={18} style={{ minWidth: '18px' }} />
+              
+              <span style={{ 
+                maxWidth: '200px', 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis',
+                margin: '0 4px' 
+              }}>
+                {currentCity || "Seleccionar Ubicación"}
+              </span>
+              
+              <IoChevronDown size={16} style={{ minWidth: '16px' }} />
             </LocationSelector>
             <SearchBox>
               <IoSearchOutline size={20} />{" "}
@@ -732,7 +748,7 @@ export default function Home() {
                   <Avatar
                     src={
                       user.profile_photo
-                        ? `https://bookifypro-production.up.railway.app/${user.profile_photo}`
+                        ? `http://localhost:4000/${user.profile_photo}`
                         : "https://i.pravatar.cc/100"
                     }
                     alt="avatar"
@@ -782,13 +798,14 @@ export default function Home() {
           </SliderContainer>
         </SliderSection>
 
-        {/* CERCA DE TI */}
+        {/* CERCA DE TI (DINÁMICO) */}
         <Section>
           <SectionHeader>
-            <SectionTitle>Cerca de Ti</SectionTitle>
+            <SectionTitle>Cerca de Ti {currentCity && <span style={{fontSize:'0.6em', fontWeight:400, color:'#666'}}>({currentCity})</span>}</SectionTitle>
             <SeeAll to="/cerca-de-ti">Ver todo</SeeAll>
           </SectionHeader>
-          {!userLocation ? (
+          
+          {!hasLocationPermission ? (
             <BlockedCard>
               <BlockedTitle>¿Quieres ver los negocios más cercanos?</BlockedTitle>
               <BlockedText>
@@ -801,20 +818,43 @@ export default function Home() {
             </BlockedCard>
           ) : (
             <CardsRow>
-              {salonsData.map((s) => (
-                <SalonCard key={s.id}>
-                  <SalonImg src={s.img} alt={s.name} />
-                  <SalonContent>
-                    <SalonName>{s.name}</SalonName>
-                    <SalonDesc>{s.desc}</SalonDesc>
-                    <SalonInfo><IoTimeOutline/>{s.travel}</SalonInfo>
-                    <SalonInfo><IoLocationSharp/>{s.distance}</SalonInfo>
-                    <SalonInfo><IoLocationSharp/>{s.address}</SalonInfo>
-                    <SalonInfo><IoTimeOutline/>{s.hours}</SalonInfo>
-                    <SalonBtn to={`/details/${s.id}`}>Ver más</SalonBtn>
-                  </SalonContent>
-                </SalonCard>
-              ))}
+              {nearbyBusinesses.length > 0 ? (
+                nearbyBusinesses.slice(0, 3).map((biz) => (
+                  <SalonCard key={biz.id}>
+                    <SalonImg
+                      src={
+                        biz.thumbnail
+                          ? `http://localhost:4000/${biz.thumbnail}`
+                          : "/placeholder.jpg"
+                      }
+                      alt={biz.name}
+                    />
+                    <SalonContent>
+                      <SalonName>{biz.name}</SalonName>
+                      <SalonDesc>{biz.about ? biz.about.slice(0, 60) + "..." : "Sin descripción"}</SalonDesc>
+                      
+                      {/* Muestra distancia real si existe, sino un placeholder */}
+                      <SalonInfo>
+                        <IoTimeOutline/> 
+                        {biz.distance 
+                          ? `Aprox. ${(biz.distance * 2).toFixed(0)} min` // Estimación tonta: 2 min por km
+                          : "Tiempo variable"} 
+                        {biz.distance && <span style={{marginLeft:8, color:'#3747ec', fontWeight:'bold'}}>({biz.distance.toFixed(1)} km)</span>}
+                      </SalonInfo>
+
+                      <SalonInfo>
+                        <IoLocationSharp /> {biz.address}
+                      </SalonInfo>
+                      <SalonBtn to={`/details/${biz.id}`}>Ver más</SalonBtn>
+                    </SalonContent>
+                  </SalonCard>
+                ))
+              ) : (
+                <div style={{ gridColumn: "1 / -1", padding: "2rem", textAlign: "center", color: "#888", background:"#fff", borderRadius:12 }}>
+                   <p>No encontramos negocios registrados cerca de <strong>{currentCity}</strong> aún.</p>
+                   <p style={{fontSize:'0.9em'}}>Intenta buscar en otra ciudad o ver los destacados.</p>
+                </div>
+              )}
             </CardsRow>
           )}
 
@@ -822,7 +862,36 @@ export default function Home() {
             <ModalBg>
               <ModalCard>
                 <CloseBtn onClick={() => setManualModal(false)}>&times;</CloseBtn>
-                <ModalTitle>Ingresa tu ciudad o localidad</ModalTitle>
+                <ModalTitle>¿Dónde te encuentras?</ModalTitle>
+                
+                {/* Opción 1: GPS */}
+                <button 
+                  onClick={() => {
+                    requestGeolocation();
+                    setManualModal(false); // Cerramos modal y dejamos que cargue
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    marginBottom: '1rem',
+                    background: '#eef2ff',
+                    color: '#3747ec',
+                    border: '1px solid #3747ec',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  <IoLocationSharp /> Usar mi ubicación actual
+                </button>
+
+                <div style={{textAlign:'center', color:'#999', marginBottom:'1rem', fontSize:'0.9em'}}>- O -</div>
+
+                {/* Opción 2: Manual (Tu componente actual) */}
                 <AutocompleteMexico
                   data={mexicoData}
                   onSelect={handleManualSelection}
@@ -832,7 +901,7 @@ export default function Home() {
           )}
         </Section>
 
-        {/* ESPECIALISTAS DESTACADOS */}
+        {/* ESPECIALISTAS DESTACADOS (Estático por ahora) */}
         <Section>
           <SectionHeader>
             <SectionTitle>Especialistas Destacados</SectionTitle>
@@ -849,7 +918,7 @@ export default function Home() {
           </CardsRow>
         </Section>
 
-        {/* SALONES DESTACADOS */}
+        {/* SALONES DESTACADOS (Todos los negocios) */}
         <Section>
           <SectionHeader>
             <SectionTitle>Salones destacados</SectionTitle>
@@ -861,14 +930,14 @@ export default function Home() {
                 <SalonImg
                   src={
                     biz.thumbnail
-                      ? `https://bookifypro-production.up.railway.app/${biz.thumbnail}`
+                      ? `http://localhost:4000/${biz.thumbnail}`
                       : "/placeholder.jpg"
                   }
                   alt={biz.name}
                 />
                 <SalonContent>
                   <SalonName>{biz.name}</SalonName>
-                  <SalonDesc>{biz.about}</SalonDesc>
+                  <SalonDesc>{biz.about ? biz.about.slice(0, 60) + "..." : ""}</SalonDesc>
                   <SalonInfo>
                     <IoLocationSharp /> {biz.address}
                   </SalonInfo>

@@ -1,4 +1,5 @@
 import * as ClientModel from "../models/clientsModel.js";
+import { v4 as uuidv4 } from "uuid";
 
 export async function suggestClients(req, res) {
   const { business_id, query } = req.query;
@@ -30,7 +31,10 @@ export async function createClient(req, res) {
       return res.status(409).json({ error: "Cliente ya existe" });
     }
 
+    const newClient = uuidv4();
+
     const nuevoCliente = await ClientModel.createClient({
+      id: newClient,
       business_id,
       user_id: user_id || null,
       full_name,
