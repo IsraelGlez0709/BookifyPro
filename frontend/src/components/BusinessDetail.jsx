@@ -13,9 +13,11 @@ import {
   IoCreateOutline,
   IoSearchOutline,
   IoClose,
+  IoLogoFacebook,
+  IoLogoInstagram,
+  IoLogoTwitter
 } from "react-icons/io5";
 import { useNavigate, useParams } from "react-router-dom";
-import { FaFacebook, FaInstagram, FaTwitter } from "react-icons/fa";
 
 import { loadStripe } from "@stripe/stripe-js";
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -785,7 +787,7 @@ export default function BusinessDetail() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch(`http://localhost:4000/api/businesses/${id}`, {
+    fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -793,6 +795,21 @@ export default function BusinessDetail() {
         return res.json();
       })
       .then((data) => {
+        if (typeof data.social_links === 'string') {
+          try {
+            data.social_links = JSON.parse(data.social_links);
+          } catch (e) {
+            data.social_links = {};
+          }
+        }
+
+        if (typeof data.phone_numbers === 'string') {
+          try {
+            data.phone_numbers = JSON.parse(data.phone_numbers);
+          } catch (e) {
+            data.phone_numbers = {};
+          }
+        }
         setBiz(data);
       })
       .catch(console.error);
@@ -804,7 +821,7 @@ export default function BusinessDetail() {
       if (!biz || !diasBase.length) return;
       const specialist = biz.specialists?.find((s) => s.name === selSpec);
       const specialistId = specialist?.id || null;
-      const API = "http://localhost:4000";
+      const API = "https://oral-susan-utt-eab6c28f.koyeb.app";
       const token = localStorage.getItem("token");
 
       const checks = await Promise.all(
@@ -852,7 +869,7 @@ export default function BusinessDetail() {
     const specialist = biz.specialists.find((s) => s.name === selSpec);
     const specialistId = specialist?.id || null;
 
-    const API = "http://localhost:4000";
+    const API = "https://oral-susan-utt-eab6c28f.koyeb.app";
     const token = localStorage.getItem("token");
 
     const url = new URL(`${API}/api/appointments/${biz.id}/availability`);
@@ -1013,7 +1030,7 @@ export default function BusinessDetail() {
       };
 
       const res = await fetch(
-        "http://localhost:4000/api/payments/appointments/checkout",
+        "https://oral-susan-utt-eab6c28f.koyeb.app/api/payments/appointments/checkout",
         {
           method: "POST",
           headers: {
@@ -1067,6 +1084,21 @@ export default function BusinessDetail() {
     return <Page>…Cargando negocio…</Page>;
   }
 
+  const extractHandle = (url) => {
+    if (!url) return "";
+    try {
+      const safeUrl = url.startsWith("http") ? url : `https://${url}`;
+      const urlObj = new URL(safeUrl);
+      let handle = urlObj.pathname.replace(/^\/|\/$/g, "");
+
+      if (!handle) return "Ver perfil";
+
+      return `@${handle}`;
+    } catch (error) {
+      return "Ver perfil";
+    }
+  };
+
   return (
     <>
       <GlobalStyle />
@@ -1091,40 +1123,54 @@ export default function BusinessDetail() {
               </InfoRow>
 
               <SocialInlineRow>
-                <SocialLink
-                  href={
-                    biz.socials?.facebook?.url ||
-                    "https://facebook.com/ersha.th"
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <FaFacebook style={{ color: "#1877F2" }} />
-                  {biz.socials?.facebook?.handle || "@ersha.th"}
-                </SocialLink>
+                {biz.social_links?.facebook && (
+                  <SocialLink
+                    href={biz.social_links.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <div style={{ display: "flex", minWidth: "20px" }}>
+                      <IoLogoFacebook 
+                        size={22} 
+                        style={{ color: "#1877F2", fill: "#1877F2" }}
+                      />
+                    </div>
+                    {extractHandle(biz.social_links.facebook)}
+                  </SocialLink>
+                )}
 
-                <SocialLink
-                  href={
-                    biz.socials?.instagram?.url ||
-                    "https://instagram.com/ersha.th"
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <FaInstagram style={{ color: "#E4405F" }} />
-                  {biz.socials?.instagram?.handle || "@ersha.th"}
-                </SocialLink>
+                {biz.social_links?.instagram && (
+                  <SocialLink
+                    href={biz.social_links.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <div style={{ display: "flex", minWidth: "20px" }}>
+                      <IoLogoInstagram 
+                        size={22} 
+                        style={{ color: "#E4405F", fill: "#E4405F" }}
+                      />
+                    </div>
+                    {extractHandle(biz.social_links.instagram)}
+                  </SocialLink>
+                )}
 
-                <SocialLink
-                  href={
-                    biz.socials?.twitter?.url || "https://twitter.com/ersha_th"
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <FaTwitter style={{ color: "#1DA1F2" }} />
-                  {biz.socials?.twitter?.handle || "@ersha_th"}
-                </SocialLink>
+                {biz.social_links?.twitter && (
+                  <SocialLink
+                    href={biz.social_links.twitter}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <div style={{ display: "flex", minWidth: "20px" }}>
+                      <IoLogoTwitter 
+                        size={22} 
+                        style={{ color: "#000000", fill: "#000000" }}
+                      />
+                    </div>
+                    {extractHandle(biz.social_links.twitter)}
+                  </SocialLink>
+                )}
+
               </SocialInlineRow>
             </div>
 
@@ -1197,7 +1243,7 @@ export default function BusinessDetail() {
                   {biz.specialists.map((sp) => (
                     <SpecCard key={sp.id}>
                       <SpecImg
-                        src={`http://localhost:4000/${sp.photo}`}
+                        src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`}
                         alt={sp.name}
                       />
                       <SpecName>{sp.name}</SpecName>
@@ -1210,7 +1256,7 @@ export default function BusinessDetail() {
                 biz.packages.map((pkg) => (
                   <PackCard key={pkg.id}>
                     <PackImg
-                      src={`http://localhost:4000/${pkg.photo}`}
+                      src={`https://oral-susan-utt-eab6c28f.koyeb.app/${pkg.photo}`}
                       alt={pkg.name}
                     />
                     <PackInfo>
@@ -1230,7 +1276,7 @@ export default function BusinessDetail() {
                   {biz.gallery.map((url, i) => (
                     <GalleryImg
                       key={i}
-                      src={`http://localhost:4000/${url}`}
+                      src={`https://oral-susan-utt-eab6c28f.koyeb.app/${url}`}
                       alt="gallery"
                     />
                   ))}
@@ -1433,7 +1479,7 @@ export default function BusinessDetail() {
                     onClick={() => setSelSpec(sp.name)}
                   >
                     <SpecPickImg
-                      src={`http://localhost:4000/${sp.photo}`}
+                      src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`}
                       alt={sp.name}
                       active={selSpec === sp.name}
                     />

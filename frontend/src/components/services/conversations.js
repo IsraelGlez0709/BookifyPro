@@ -1,7 +1,7 @@
 // src/services/conversations.js
 import { apiGet, apiPost } from "./api";
 
-const BASE = "http://localhost:4000/api";
+const BASE = "https://oral-susan-utt-eab6c28f.koyeb.app/api";
 
 export async function ensureBusinessConversation(businessId) {
   return apiPost(`${BASE}/conversations/ensure`, {

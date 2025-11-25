@@ -169,7 +169,7 @@ export default function ModalCliente({ show, onClose, onSave, businessId }) {
       setLoading?.(true);
       try {
         const res = await fetch(
-          `http://localhost:4000/api/users/search?email=${encodeURIComponent(value)}`
+          `https://oral-susan-utt-eab6c28f.koyeb.app/api/users/search?email=${encodeURIComponent(value)}`
         );
         const arr = await res.json();
         setSuggestions(arr);

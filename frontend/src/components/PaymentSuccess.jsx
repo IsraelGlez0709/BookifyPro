@@ -125,7 +125,7 @@ export default function PaymentSuccess() {
         setLoading(true);
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:4000/api/appointments/${appointmentId}`,
+          `https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments/${appointmentId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.ok) {

@@ -47,7 +47,7 @@ export default function SpecialistsSection({ negocio }) {
   useEffect(() => {
     if (!negocio?.id) return;
     const token = localStorage.getItem("token");
-    fetch(`http://localhost:4000/api/businesses/specialists?business_id=${negocio.id}`, {
+    fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/specialists?business_id=${negocio.id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())

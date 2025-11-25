@@ -206,7 +206,7 @@ export default function BusinessPanel({ myBusinesses }) {
     async function fetchBusinesses() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/api/businesses/mine", {
+        const res = await fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/mine", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("No se pudieron cargar los negocios");
@@ -276,7 +276,7 @@ export default function BusinessPanel({ myBusinesses }) {
                     <BizAvatar>
                       {b.thumbnail?.file_url ? (
                         <img
-                          src={`http://localhost:4000/${b.thumbnail.file_url}`}
+                          src={`https://oral-susan-utt-eab6c28f.koyeb.app/${b.thumbnail.file_url}`}
                           alt={b.name}
                         />
                       ) : (

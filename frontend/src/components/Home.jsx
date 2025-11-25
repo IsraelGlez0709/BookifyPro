@@ -518,7 +518,7 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return navigate("/", { replace: true });
-    fetch("http://localhost:4000/api/users/me", {
+    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/users/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -535,7 +535,7 @@ export default function Home() {
   // 2. Cargar Negocios
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:4000/api/businesses", {
+    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -545,7 +545,7 @@ export default function Home() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:4000/api/businesses/mine", {
+    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/mine", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -748,7 +748,7 @@ export default function Home() {
                   <Avatar
                     src={
                       user.profile_photo
-                        ? `http://localhost:4000/${user.profile_photo}`
+                        ? `https://oral-susan-utt-eab6c28f.koyeb.app/${user.profile_photo}`
                         : "https://i.pravatar.cc/100"
                     }
                     alt="avatar"
@@ -824,7 +824,7 @@ export default function Home() {
                     <SalonImg
                       src={
                         biz.thumbnail
-                          ? `http://localhost:4000/${biz.thumbnail}`
+                          ? `https://oral-susan-utt-eab6c28f.koyeb.app/${biz.thumbnail}`
                           : "/placeholder.jpg"
                       }
                       alt={biz.name}
@@ -930,7 +930,7 @@ export default function Home() {
                 <SalonImg
                   src={
                     biz.thumbnail
-                      ? `http://localhost:4000/${biz.thumbnail}`
+                      ? `https://oral-susan-utt-eab6c28f.koyeb.app/${biz.thumbnail}`
                       : "/placeholder.jpg"
                   }
                   alt={biz.name}

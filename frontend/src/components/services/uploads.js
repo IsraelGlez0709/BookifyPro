@@ -1,6 +1,6 @@
 // src/services/uploads.js
 import { authHeaders } from "./api";
-const BASE = "http://localhost:4000/api";
+const BASE = "https://oral-susan-utt-eab6c28f.koyeb.app/api";
 
 export async function uploadChatFile(file) {
   const fd = new FormData();

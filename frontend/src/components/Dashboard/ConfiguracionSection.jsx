@@ -225,7 +225,7 @@ export default function ConfiguracionSection({ negocio, onUpdate }) {
       });
 
       if (negocio.logo) {
-        setLogoPreview(`http://localhost:4000/${negocio.logo}`);
+        setLogoPreview(`https://oral-susan-utt-eab6c28f.koyeb.app/${negocio.logo}`);
       }
 
       if(negocio.address_zip) {
@@ -369,7 +369,7 @@ export default function ConfiguracionSection({ negocio, onUpdate }) {
       }
 
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:4000/api/businesses/${negocio.id}/update`, {
+      const res = await fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/${negocio.id}/update`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body: data

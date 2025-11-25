@@ -355,7 +355,7 @@ export default function Auth() {
   const submitLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:4000/api/users/login", {
+      const res = await fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPwd }),
@@ -397,7 +397,7 @@ export default function Auth() {
     formData.append("email", regEmail);
     formData.append("password", regPwd);
     try {
-      const res = await fetch("http://localhost:4000/api/users/register", {
+      const res = await fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/users/register", {
         method: "POST",
         body: formData,
       });
