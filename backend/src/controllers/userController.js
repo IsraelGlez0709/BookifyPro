@@ -12,7 +12,7 @@ export async function registerUser(req, res) {
     const { full_name, phone, gender, dob, email, password } = req.body;
     let profilePhoto = null;
     if (req.file) {
-      profilePhoto = `/uploads/${req.file.filename}`;
+      profilePhoto = req.file.path;
     }
     console.log('guardar en BD profilePhoto=', profilePhoto);
     if (await User.findUserByEmail(email)) {

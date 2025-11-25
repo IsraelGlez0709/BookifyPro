@@ -450,7 +450,15 @@ export async function deletePackageById(req, res) {
 
 export async function updateBusiness(req, res) {
   const { id } = req.params;
-  const { name, type, about, address_street, address_city, phone_numbers, social_links } = req.body;
+
+  const { 
+    name, type, about, 
+    address_street, address_city, 
+    address_zip, address_state, address_colony, 
+    address_ext_num, address_int_num,
+    latitude, longitude,
+    phone_numbers, social_links 
+  } = req.body;
   
   try {
     let logoPath = undefined;
@@ -459,16 +467,33 @@ export async function updateBusiness(req, res) {
     }
 
     const updateData = {
-      name, type, about, address_street, address_city,
-      phone_numbers: phone_numbers ? JSON.parse(phone_numbers) : null,
-      social_links: social_links ? JSON.parse(social_links) : null
+      name, 
+      type, 
+      about, 
+      address_street, 
+      address_city,
+      address_zip,
+      address_state,
+      address_colony,
+      address_ext_num,
+      address_int_num,
+      latitude,
+      longitude,
+      phone_numbers: phone_numbers ? JSON.parse(phone_numbers) : undefined,
+      social_links: social_links ? JSON.parse(social_links) : undefined
     };
-    
+
     if (logoPath) updateData.logo = logoPath;
 
     await Biz.updateBusinessModel(id, updateData);
 
     const updated = await Biz.getBusinessById(id);
+    
+    if (updated) {
+        updated.phone_numbers = typeof updated.phone_numbers === 'string' ? JSON.parse(updated.phone_numbers) : updated.phone_numbers;
+        updated.social_links = typeof updated.social_links === 'string' ? JSON.parse(updated.social_links) : updated.social_links;
+    }
+
     res.json(updated);
 
   } catch (err) {

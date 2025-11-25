@@ -86,6 +86,12 @@ export default function UserDropdown({user, onLogout, closeMenu, expanded, setEx
   const ref = useRef(null);
   const navigate = useNavigate();
 
+  const getImageUrl = (path) => {
+    if (!path) return 'https://i.pravatar.cc/100';
+    if (path.startsWith('http')) return path;
+    return `https://oral-susan-utt-eab6c28f.koyeb.app/${path}`;
+  };
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) closeMenu();
@@ -97,7 +103,10 @@ export default function UserDropdown({user, onLogout, closeMenu, expanded, setEx
   return (
     <DropdownBox ref={ref}>
       <ProfileSection>
-        <Avatar src={user.profile_photo ? `https://oral-susan-utt-eab6c28f.koyeb.app/${user.profile_photo}` : 'https://i.pravatar.cc/100'} alt="avatar" />
+        <Avatar 
+          src={getImageUrl(user.profile_photo)} 
+          alt="avatar" 
+        />
         <ProfileName>{user.full_name || "Usuario"}</ProfileName>
       </ProfileSection>
       <MenuList>

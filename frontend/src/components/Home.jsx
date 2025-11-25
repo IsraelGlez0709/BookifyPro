@@ -676,6 +676,13 @@ export default function Home() {
       });
   }, [businesses, userLocation, currentCity, hasLocationPermission]);
 
+  const getImageUrl = (path, type = 'user') => {
+    if (!path) {
+      return type === 'user' ? "https://i.pravatar.cc/100" : "/placeholder.jpg";
+    }
+    if (path.startsWith('http')) return path;
+    return `https://oral-susan-utt-eab6c28f.koyeb.app/${path}`;
+  };
 
   return (
     <>
@@ -746,13 +753,9 @@ export default function Home() {
               <Profile ref={profileRef}>
                 <ProfileButton onClick={() => setShowProfileMenu((v) => !v)}>
                   <Avatar
-                    src={
-                      user.profile_photo
-                        ? `https://oral-susan-utt-eab6c28f.koyeb.app/${user.profile_photo}`
-                        : "https://i.pravatar.cc/100"
-                    }
-                    alt="avatar"
-                  />{" "}
+                     src={getImageUrl(user.profile_photo, 'user')}
+                     alt="avatar"
+                   />
                   {user.full_name || "Usuario"} <IoChevronDown size={14} />
                 </ProfileButton>
                 {showProfileMenu && (
@@ -822,11 +825,7 @@ export default function Home() {
                 nearbyBusinesses.slice(0, 3).map((biz) => (
                   <SalonCard key={biz.id}>
                     <SalonImg
-                      src={
-                        biz.thumbnail
-                          ? `https://oral-susan-utt-eab6c28f.koyeb.app/${biz.thumbnail}`
-                          : "/placeholder.jpg"
-                      }
+                      src={getImageUrl(biz.thumbnail, 'business')}
                       alt={biz.name}
                     />
                     <SalonContent>
