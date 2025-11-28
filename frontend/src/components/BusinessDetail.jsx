@@ -15,66 +15,42 @@ import {
   IoClose,
   IoLogoFacebook,
   IoLogoInstagram,
-  IoLogoTwitter
+  IoLogoTwitter,
 } from "react-icons/io5";
 import { useNavigate, useParams } from "react-router-dom";
-
 import { loadStripe } from "@stripe/stripe-js";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+
+// --- CONFIGURACIÓN ---
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%'
+};
+
 /* ==== MOCK DATA ==== */
-const SERVICES = [
-  { name: "Hair Cut", types: 20 },
-  { name: "Hair Coloring", types: 12 },
-  { name: "Blow Dry", types: 8 },
-];
-
-const SPECIALISTS = [
-  {
-    name: "Kathryn Murphy",
-    role: "Hair Stylist",
-    img: "https://randomuser.me/api/portraits/women/68.jpg",
-  },
-  {
-    name: "Esther Howard",
-    role: "Nail Artist",
-    img: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-];
-
-const PACKAGES = [
-  {
-    title: "Hair Cutting & Hair Stylist",
-    desc: "Special Offers Package. Valid until Dec 10, 2024",
-    price: "$125.00",
-    img: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    title: "Beauty Make Up",
-    desc: "Special Offers Package. Valid until Dec 10, 2024",
-    price: "$140.00",
-    img: "https://randomuser.me/api/portraits/women/32.jpg",
-  },
-];
-
 const REVIEWS = [
   {
     user: "Dale Thiel",
     followers: 45,
     time: "11 months ago",
-    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
+    text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     rating: 5,
   },
 ];
 
-// Para el modal: próximos 5 días
-// Horarios de ejemplo
-const TIMES = ["7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"];
+const CONTACTOS_MOCK = [
+  { id: "u1", name: "Laura García", photo: "https://randomuser.me/api/portraits/women/12.jpg" },
+  { id: "u2", name: "Carlos Pérez", photo: "https://randomuser.me/api/portraits/men/28.jpg" },
+  { id: "u3", name: "María López", photo: "https://randomuser.me/api/portraits/women/45.jpg" },
+];
 
-/* ==== GLOBAL STYLE ==== */
+/* ==== STYLES ==== */
 const GlobalStyle = createGlobalStyle`
   *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Poppins', sans-serif; background: #F7F8FD; }
+  body { margin: 0; font-family: 'Poppins', sans-serif; background: #F7F8FD; overflow: hidden; } 
+  /* overflow hidden en body ayuda a que la app se sienta nativa */
   a { text-decoration: none; }
 `;
 
@@ -85,73 +61,137 @@ function yyyymmddLocal(d) {
   return `${y}-${m}-${dd}`;
 }
 
-const DAYS = Array.from({ length: 5 }).map((_, i) => {
-  const d = new Date();
-  d.setDate(d.getDate() + i);
-  return {
-    label:
-      i === 0
-        ? "Today"
-        : d.toLocaleDateString("en-US", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-          }),
-    date: yyyymmddLocal(d),
-  };
-});
-
-/* ==== LAYOUT ==== */
+/* --- LAYOUT RESPONSIVO TIPO GOOGLE MAPS --- */
 const Page = styled.div`
   display: flex;
   height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column; /* Aunque RightPane será absoluto, esto ayuda al orden */
+  }
 `;
+
+const RightPane = styled.div`
+  flex: 1;
+  position: relative;
+  background: #eef2f6;
+  z-index: 1; /* Nivel base */
+
+  @media (max-width: 768px) {
+    /* En móvil, el mapa ocupa TODA la pantalla de fondo */
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    height: 100%;
+    z-index: 0; 
+  }
+`;
+
 const LeftPane = styled.div`
   width: 50%;
   max-width: 500px;
   display: flex;
   flex-direction: column;
   background: #fff;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 10; /* Por encima del mapa en desktop */
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 35vh;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    z-index: 20;
+  }
 `;
+
+/* Elemento visual para indicar que se puede deslizar (solo decorativo) */
+const SheetHandle = styled.div`
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+    width: 40px;
+    height: 5px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    margin: 12px auto 5px auto;
+    padding: 2px; 
+    box-sizing: content-box;
+    cursor: grab;
+  }
+`;
+
+/* Botón flotante para volver en móvil (estilo Maps) */
+const FloatingBackBtn = styled.button`
+  display: none;
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 100; /* Muy arriba */
+    font-size: 1.2rem;
+    color: #232c5c;
+    cursor: pointer;
+  }
+`;
+
 const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
+  /* Scrollbar styling */
   scrollbar-width: thin;
-  scrollbar-color: #575757 transparent;
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: #575757;
-    border-radius: 0;
-  }
-  &::-webkit-scrollbar-track,
-  &::-webkit-scrollbar-button,
-  &::-webkit-scrollbar-corner {
-    background: transparent;
+  scrollbar-color: #ccc transparent;
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 4px; }
+  
+  @media (max-width: 768px) {
+    padding: 0.5rem 1.5rem 1.5rem 1.5rem; /* Menos padding arriba por el handle */
   }
 `;
+
 const BookWrapper = styled.div`
   padding: 1rem;
   background: #fff;
   border-top: 1px solid #e0e4f3;
   text-align: center;
-`;
-const RightPane = styled.div`
-  flex: 1;
-  background: url("https://thehappening.com/wp-content/uploads/2024/02/captura-de-pantalla-2023-05-17-a-la-s-52813-pm-1.jpg")
-    center/cover no-repeat;
+  z-index: 11;
 `;
 
-/* ==== COMMON UI ==== */
+const CoverImage = styled.div`
+  width: 100%;
+  height: 100%;
+  background: url(${(p) => p.bg}) center/cover no-repeat;
+`;
+
+/* UI Components */
 const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    /* Ocultamos el botón back del header en móvil porque usaremos el flotante */
+    .desktop-back { display: none; }
+  }
 `;
+
 const IconButton = styled.button`
   background: #fff;
   border: none;
@@ -160,10 +200,9 @@ const IconButton = styled.button`
   cursor: pointer;
   font-size: 1.2rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  &:not(:last-child) {
-    margin-right: 0.5rem;
-  }
+  &:not(:last-child) { margin-right: 0.5rem; }
 `;
+
 const RatingBadge = styled.div`
   font-size: 0.8rem;
   display: inline-flex;
@@ -173,11 +212,9 @@ const RatingBadge = styled.div`
   border-radius: 12px;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  svg {
-    margin-right: 0.35rem;
-    color: #ffd600;
-  }
+  svg { margin-right: 0.35rem; color: #ffd600; }
 `;
+
 const Title = styled.h1`
   margin: 0 0 0.25rem;
   font-size: 1.4rem;
@@ -195,11 +232,7 @@ const InfoRow = styled.div`
   color: #666;
   margin-bottom: 0.5rem;
   font-size: 0.8rem;
-  svg {
-    margin-right: 0.5rem;
-    color: #232c5c;
-    font-size: 1rem;
-  }
+  svg { margin-right: 0.5rem; color: #232c5c; font-size: 1rem; }
 `;
 const Divider = styled.hr`
   border: none;
@@ -222,14 +255,10 @@ const ActionBtn = styled.button`
   display: flex;
   flex-direction: column;
   align-items: center;
-  svg {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-    color: #232c5c;
-  }
+  svg { font-size: 1.2rem; margin-bottom: 0.5rem; color: #232c5c; }
 `;
 
-/* ==== TABS ==== */
+/* Tabs */
 const TabsNav = styled.div`
   display: flex;
   overflow-x: auto;
@@ -237,10 +266,7 @@ const TabsNav = styled.div`
   border-bottom: 1px solid #e0e4f3;
   margin-bottom: 1rem;
   scrollbar-width: none;
-  -ms-overflow-style: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
 `;
 const TabButton = styled.button`
   flex: 0 0 auto;
@@ -264,7 +290,7 @@ const TabButton = styled.button`
 `;
 const TabContent = styled.div``;
 
-/* ==== CARDS ==== */
+/* Cards */
 const ServiceCard = styled.div`
   display: flex;
   justify-content: space-between;
@@ -275,9 +301,7 @@ const ServiceCard = styled.div`
   margin-bottom: 0.75rem;
   border: 1px solid #e0e4f3;
   cursor: pointer;
-  &:hover {
-    background: #eef2fb;
-  }
+  &:hover { background: #eef2fb; }
 `;
 const ServiceName = styled.span`
   color: #232c5c;
@@ -336,6 +360,7 @@ const PackInfo = styled.div`
   padding: 0.5rem 1rem;
   display: flex;
   flex-direction: column;
+  padding: 0.5rem 1rem;
 `;
 const PackTitle = styled.h4`
   margin: 0 0 0.25rem;
@@ -406,59 +431,7 @@ const AddReviewBtn = styled.button`
   display: flex;
   align-items: center;
   cursor: pointer;
-  svg {
-    margin-right: 0.3rem;
-  }
-`;
-const FilterRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-`;
-const FilterBtn = styled.button`
-  background: #f3f3f6;
-  border: none;
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
-  color: #3747ec;
-  font-weight: 500;
-  font-size: 0.85rem;
-  cursor: pointer;
-`;
-const SearchInput = styled.div`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  background: #f7f8fd;
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  svg {
-    margin-right: 0.4rem;
-    color: #bbb;
-  }
-  input {
-    border: none;
-    outline: none;
-    background: transparent;
-    width: 100%;
-    font-size: 0.9rem;
-    color: #232c5c;
-  }
-`;
-const ChipsRow = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-`;
-const Chip = styled.button`
-  background: ${(p) => (p.active ? "#3747EC" : "#F3F3F6")};
-  border: none;
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
-  color: ${(p) => (p.active ? "#fff" : "#3747EC")};
-  font-size: 0.85rem;
-  cursor: pointer;
+  svg { margin-right: 0.3rem; }
 `;
 const ReviewCard = styled.div`
   background: #f7f8fd;
@@ -485,10 +458,7 @@ const RatingRow = styled.div`
   align-items: center;
   margin-bottom: 0.5rem;
   font-size: 0.8rem;
-  svg {
-    color: #ffd600;
-    margin-right: 0.25rem;
-  }
+  svg { color: #ffd600; margin-right: 0.25rem; }
 `;
 const ReviewText = styled.p`
   margin: 0;
@@ -521,7 +491,7 @@ const HourTime = styled.span`
   color: #3747ec;
 `;
 
-/* ==== MODAL ==== */
+/* Modal Styles */
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -564,10 +534,7 @@ const ScrollX = styled.div`
   overflow-x: auto;
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 `;
 const Pill = styled.button`
   flex: 0 0 auto;
@@ -584,10 +551,7 @@ const SpecialistPick = styled.div`
   overflow-x: auto;
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 `;
 const SpecPickCard = styled.div`
   flex: 0 0 auto;
@@ -620,31 +584,22 @@ const ConfirmBtn = styled.button`
   margin-top: 1rem;
 `;
 
-const SocialRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 8px 0 12px;
-`;
-const SocialItem = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #232c5c;
+const SocialInlineRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin: 6px 0 10px;
   font-size: 0.9rem;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: #f7f8fd;
-  border: 1px solid #e0e4f3;
 `;
-const SocialName = styled.span`
-  font-weight: 600;
+const SocialLink = styled.a`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #232c5c;
+  padding: 6px 0;
+  text-decoration: none;
 `;
-const SocialHandle = styled.span`
-  opacity: 0.8;
-`;
-
-// Modal de “Enviar a…”
 const PeopleList = styled.div`
   display: grid;
   grid-template-columns: 1fr;
@@ -681,99 +636,128 @@ const SendBtn = styled.button`
   font-weight: 600;
 `;
 
-const SocialInlineRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 columnas iguales */
-  gap: 16px;
-  width: 100%;
-  margin: 6px 0 10px;
-  font-size: 0.9rem;
-`;
-
-const SocialLink = styled.a`
+// Search & Filters (Reusados)
+const FilterRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #232c5c;
-  padding: 6px 0; /* aumenta el área clickeable */
-  text-decoration: none;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+`;
+const FilterBtn = styled.button`
+  background: #f3f3f6;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  color: #3747ec;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+`;
+const SearchInput = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #f7f8fd;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  svg { margin-right: 0.4rem; color: #bbb; }
+  input {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #232c5c;
+  }
+`;
+const ChipsRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+`;
+const Chip = styled.button`
+  background: ${(p) => (p.active ? "#3747EC" : "#F3F3F6")};
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  color: ${(p) => (p.active ? "#fff" : "#3747EC")};
+  font-size: 0.85rem;
+  cursor: pointer;
 `;
 
 /* ==== COMPONENT ==== */
 export default function BusinessDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // --- GOOGLE MAPS LOADER ---
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: "AIzaSyA0pH05GrPzJupyTsfzBtGyIA2nIUtCDas"
+  });
+
+  // Data
   const [biz, setBiz] = useState(null);
-  const [tab, setTab] = useState(0);
+  const [diasDisponibles, setDiasDisponibles] = useState([]);
+  const [diasBase, setDiasBase] = useState([]);
+  const [takenTimes, setTakenTimes] = useState([]);
+
+  // UI States
+  const [activeTab, setActiveTab] = useState("services");
   const [readMore, setReadMore] = useState(false);
   const [activeChip, setActiveChip] = useState("Verified");
   const [showModal, setShowModal] = useState(false);
-  const [diasDisponibles, setDiasDisponibles] = useState([]);
-
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [loadingPago, setLoadingPago] = useState(false);
+  
+  // Selection States
   const [selDay, setSelDay] = useState(null);
   const [selTime, setSelTime] = useState(null);
   const [selSpec, setSelSpec] = useState(null);
-  const [selSvc, setSelSvc] = useState(SERVICES[0].name);
-
+  const [selSvc, setSelSvc] = useState(null);
   const [selectedPrice, setSelectedPrice] = useState(null);
-  const [loadingPago, setLoadingPago] = useState(false);
-  const [takenTimes, setTakenTimes] = useState([]);
-  const [showTakenDimmed] = useState(false);
-  const [diasBase, setDiasBase] = useState([]);
 
-  const [showSendModal, setShowSendModal] = useState(false);
+  const [sheetHeight, setSheetHeight] = useState(35);
+  const touchStartY = useRef(0);
+  const startHeight = useRef(35);
 
-  const CONTACTOS_MOCK = [
-    {
-      id: "u1",
-      name: "Laura García",
-      photo: "https://randomuser.me/api/portraits/women/12.jpg",
-    },
-    {
-      id: "u2",
-      name: "Carlos Pérez",
-      photo: "https://randomuser.me/api/portraits/men/28.jpg",
-    },
-    {
-      id: "u3",
-      name: "María López",
-      photo: "https://randomuser.me/api/portraits/women/45.jpg",
-    },
-  ];
-
-  const copiarURL = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      alert("Enlace copiado al portapapeles");
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = url;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      alert("Enlace copiado al portapapeles ✅");
-    }
-  };
-
-  const enviarURLaContacto = async (contactId) => {
-    alert(`URL enviada a ${contactId} (demo)`);
-  };
-
+  const tabsRef = useRef(null);
+  let isDown = false, startX = 0, scrollLeft = 0;
   const diasRef = useRef();
   const horasRef = useRef();
-  let isDownDias = false,
-    startXDias = 0,
-    scrollLeftDias = 0;
-  let isDownHoras = false,
-    startXHoras = 0,
-    scrollLeftHoras = 0;
-  const tabsRef = useRef(null);
-  let isDown = false,
-    startX = 0,
-    scrollLeft = 0;
+  let isDownDias = false, startXDias = 0, scrollLeftDias = 0;
+  let isDownHoras = false, startXHoras = 0, scrollLeftHoras = 0;
 
+  // 1. Fetch Business Data
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("No encontrado");
+        return res.json();
+      })
+      .then((data) => {
+        // Parsing JSON fields safely
+        if (typeof data.social_links === 'string') {
+          try { data.social_links = JSON.parse(data.social_links); } catch (e) { data.social_links = {}; }
+        }
+        if (typeof data.phone_numbers === 'string') {
+          try { data.phone_numbers = JSON.parse(data.phone_numbers); } catch (e) { data.phone_numbers = {}; }
+        }
+        
+        setBiz(data);
+
+        // Default service selection
+        if(data.services && data.services.length > 0) {
+            setSelSvc(data.services[0].name);
+        }
+      })
+      .catch(console.error);
+  }, [id]);
+
+  // 2. Calcular Días Base
   useEffect(() => {
     if (biz && biz.schedules) {
       const dias = getProximosDias(biz.schedules, 7);
@@ -785,38 +769,8 @@ export default function BusinessDetail() {
     }
   }, [biz]);
 
+  // 3. Filtrar Días
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("No encontrado");
-        return res.json();
-      })
-      .then((data) => {
-        if (typeof data.social_links === 'string') {
-          try {
-            data.social_links = JSON.parse(data.social_links);
-          } catch (e) {
-            data.social_links = {};
-          }
-        }
-
-        if (typeof data.phone_numbers === 'string') {
-          try {
-            data.phone_numbers = JSON.parse(data.phone_numbers);
-          } catch (e) {
-            data.phone_numbers = {};
-          }
-        }
-        setBiz(data);
-      })
-      .catch(console.error);
-  }, [id]);
-
-  useEffect(() => {
-    // Cuando ya tenemos los días base y el negocio, filtramos por días con al menos 1 slot libre
     const filtrarDiasConSlots = async () => {
       if (!biz || !diasBase.length) return;
       const specialist = biz.specialists?.find((s) => s.name === selSpec);
@@ -834,17 +788,11 @@ export default function BusinessDetail() {
               headers: { Authorization: `Bearer ${token}` },
             });
             let j = {};
-            try {
-              j = await r.json();
-            } catch {}
+            try { j = await r.json(); } catch {}
             const all = generarHoras(d.scheduleObj.from, d.scheduleObj.to, 30);
-            const taken = Array.isArray(j?.taken)
-              ? j.taken.map((t) => t.slice(0, 5))
-              : [];
+            const taken = Array.isArray(j?.taken) ? j.taken.map((t) => t.slice(0, 5)) : [];
             const slots = Array.isArray(j?.slots) ? j.slots : null;
-            const hasSlots = Array.isArray(slots)
-              ? slots.length > 0
-              : all.some((t) => !taken.includes(t));
+            const hasSlots = Array.isArray(slots) ? slots.length > 0 : all.some((t) => !taken.includes(t));
             return { ...d, hasSlots };
           } catch {
             const all = generarHoras(d.scheduleObj.from, d.scheduleObj.to, 30);
@@ -855,20 +803,18 @@ export default function BusinessDetail() {
 
       const soloConSlots = checks.filter((x) => x.hasSlots);
       setDiasDisponibles(soloConSlots);
-      // Si el día seleccionado ya no está, mueve la selección
       if (!soloConSlots.some((x) => x.date === selDay)) {
         setSelDay(soloConSlots[0]?.date ?? null);
       }
     };
     filtrarDiasConSlots();
-  }, [biz, selSpec, /* importante */ JSON.stringify(diasBase)]);
+  }, [biz, selSpec, JSON.stringify(diasBase)]);
 
+  // 4. Fetch Availability
   useEffect(() => {
     if (!biz || !selDay || !selSpec) return;
-
     const specialist = biz.specialists.find((s) => s.name === selSpec);
     const specialistId = specialist?.id || null;
-
     const API = "https://oral-susan-utt-eab6c28f.koyeb.app";
     const token = localStorage.getItem("token");
 
@@ -891,79 +837,37 @@ export default function BusinessDetail() {
       .catch(() => setTakenTimes([]));
   }, [biz, selDay, selSpec]);
 
+  // 5. Update Price
   useEffect(() => {
-    if (!biz || !biz.services || !biz.packages) return;
-
-    const svc = biz.services.find((s) => s.name === selSvc);
-    const pkg = biz.packages.find((p) => p.name === selSvc);
+    if (!biz || (!biz.services && !biz.packages)) return;
+    const svc = biz.services?.find((s) => s.name === selSvc);
+    const pkg = biz.packages?.find((p) => p.name === selSvc);
 
     if (svc) setSelectedPrice(svc.price || 0);
     else if (pkg) setSelectedPrice(pkg.price || 0);
     else setSelectedPrice(null);
   }, [selSvc, biz]);
 
-  if (!biz) {
-    return <Page>…Cargando negocio…</Page>;
-  }
-
+  // Helpers
   function dayIndexFromName(name) {
     if (!name) return undefined;
-    const k = name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, ""); // sin acentos
-    const short = k.slice(0, 3); // mon, tue, mie, sab, etc.
-    const map = {
-      // ES
-      dom: 0,
-      lun: 1,
-      mar: 2,
-      mie: 3,
-      jue: 4,
-      vie: 5,
-      sab: 6,
-      // EN
-      sun: 0,
-      mon: 1,
-      tue: 2,
-      wed: 3,
-      thu: 4,
-      fri: 5,
-      sat: 6,
-    };
+    const k = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const short = k.slice(0, 3);
+    const map = { dom: 0, lun: 1, mar: 2, mie: 3, jue: 4, vie: 5, sab: 6, sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
     return map[short];
   }
 
   function getProximosDias(schedules, n = 7) {
     const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    const mesesAbrev = [
-      "Ene",
-      "Feb",
-      "Mar",
-      "Abr",
-      "May",
-      "Jun",
-      "Jul",
-      "Ago",
-      "Sept",
-      "Oct",
-      "Nov",
-      "Dic",
-    ];
-
+    const mesesAbrev = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sept", "Oct", "Nov", "Dic"];
     const hoy = new Date();
     let resultados = [];
     let diasAgregados = 0;
     let fecha = new Date(hoy);
-
     while (diasAgregados < n) {
       const dayIndex = fecha.getDay();
       const diaNombre = diasSemana[dayIndex];
-
-      const scheduleObj = schedules.find(
-        (sch) => dayIndexFromName(sch.day) === dayIndex
-      );
-
+      const scheduleObj = schedules.find((sch) => dayIndexFromName(sch.day) === dayIndex);
       if (scheduleObj) {
         let agregar = true;
         if (diasAgregados === 0) {
@@ -973,15 +877,8 @@ export default function BusinessDetail() {
           if (hoy > cierre) agregar = false;
         }
         if (agregar) {
-          const label = `${diaNombre}, ${fecha.getDate()} ${
-            mesesAbrev[fecha.getMonth()]
-          }`;
-          resultados.push({
-            label,
-            date: yyyymmddLocal(fecha),
-            dayIndex,
-            scheduleObj,
-          });
+          const label = `${diaNombre}, ${fecha.getDate()} ${mesesAbrev[fecha.getMonth()]}`;
+          resultados.push({ label, date: yyyymmddLocal(fecha), dayIndex, scheduleObj });
           diasAgregados++;
         }
       }
@@ -995,10 +892,8 @@ export default function BusinessDetail() {
     const horas = [];
     let [h, m] = from.split(":").map(Number);
     let [hTo, mTo] = to.split(":").map(Number);
-
     const dFrom = new Date(0, 0, 0, h, m);
     const dTo = new Date(0, 0, 0, hTo, mTo);
-
     while (dFrom < dTo) {
       let hourStr = dFrom.getHours().toString().padStart(2, "0");
       let minStr = dFrom.getMinutes().toString().padStart(2, "0");
@@ -1011,13 +906,10 @@ export default function BusinessDetail() {
   const confirmarReserva = async () => {
     try {
       setLoadingPago(true);
-
       const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user"));
       const specialist = biz.specialists.find((s) => s.name === selSpec);
-
-      const service = biz.services.find((s) => s.name === selSvc);
-      const packageObj = biz.packages.find((p) => p.name === selSvc);
+      const service = biz.services?.find((s) => s.name === selSvc);
+      const packageObj = biz.packages?.find((p) => p.name === selSvc);
 
       const body = {
         business_id: biz.id,
@@ -1028,32 +920,18 @@ export default function BusinessDetail() {
         start_time: selTime,
         notes: "",
       };
-
-      const res = await fetch(
-        "https://oral-susan-utt-eab6c28f.koyeb.app/api/payments/appointments/checkout",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        }
-      );
-
+      const res = await fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/payments/appointments/checkout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "No se pudo iniciar el pago");
       }
-
       const data = await res.json().catch(() => ({}));
       const sessionId = data.sessionId || data.id;
-
-      if (!sessionId) {
-        console.log("Respuesta backend inesperada: ", data);
-        throw new Error("El backend no devolvió un sessionId de Stripe");
-      }
-
+      if (!sessionId) throw new Error("El backend no devolvió un sessionId de Stripe");
       const stripe = await stripePromise;
       const { error } = await stripe.redirectToCheckout({ sessionId });
       if (error) throw error;
@@ -1067,7 +945,6 @@ export default function BusinessDetail() {
   const formatAddress = (addr) => {
     if (!addr) return "";
     if (typeof addr === "string") return addr;
-
     const parts = [
       `${addr.street || ''} ${addr.extNum || ''}`,
       addr.intNum ? `Int. ${addr.intNum}` : null,
@@ -1076,13 +953,8 @@ export default function BusinessDetail() {
       addr.state,
       addr.zip ? `CP ${addr.zip}` : null
     ];
-
     return parts.filter(part => part && part.trim() !== '').join(', ');
   };
-
-  if (!biz) {
-    return <Page>…Cargando negocio…</Page>;
-  }
 
   const extractHandle = (url) => {
     if (!url) return "";
@@ -1090,473 +962,287 @@ export default function BusinessDetail() {
       const safeUrl = url.startsWith("http") ? url : `https://${url}`;
       const urlObj = new URL(safeUrl);
       let handle = urlObj.pathname.replace(/^\/|\/$/g, "");
-
       if (!handle) return "Ver perfil";
-
       return `@${handle}`;
     } catch (error) {
       return "Ver perfil";
     }
   };
 
+  const copiarURL = async () => {
+    const url = window.location.href;
+    try { await navigator.clipboard.writeText(url); alert("Enlace copiado"); } catch { }
+  };
+  const enviarURLaContacto = async (id) => alert("Enviado");
+
+  if (!biz) return <Page>…Cargando negocio…</Page>;
+
+  const availableTabs = [
+      { id: "services", label: "Servicios" },
+      { id: "specialists", label: "Especialistas" },
+      ...(biz.packages && biz.packages.length > 0 ? [{ id: "packages", label: "Paquetes" }] : []),
+      { id: "gallery", label: "Galería" },
+      { id: "reviews", label: "Opiniones" },
+      { id: "about", label: "Sobre Nosotros" },
+  ];
+
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+    startHeight.current = sheetHeight;
+  };
+
+  const handleTouchMove = (e) => {
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartY.current - currentY;
+    const screenHeight = window.innerHeight;
+    
+    const deltaVh = (deltaY / screenHeight) * 100;
+    
+    let newHeight = startHeight.current + deltaVh;
+
+    if (newHeight < 15) newHeight = 15;
+    if (newHeight > 92) newHeight = 92;
+
+    setSheetHeight(newHeight);
+  };
+
+  const handleTouchEnd = () => {
+    if (sheetHeight > 60) setSheetHeight(92);
+    else if (sheetHeight < 25) setSheetHeight(15);
+    else setSheetHeight(35);
+  };
+
   return (
     <>
       <GlobalStyle />
       <Page>
-        <LeftPane>
+        {/* --- BACK BUTTON FLOTANTE EN MÓVIL --- */}
+        <FloatingBackBtn onClick={() => navigate(-1)}>
+            <IoArrowBack />
+        </FloatingBackBtn>
+
+        {/* --- RIGHT PANE (MAPA FONDO) --- */}
+        <RightPane>
+            {isLoaded && biz.latitude && biz.longitude ? (
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={{ lat: parseFloat(biz.latitude), lng: parseFloat(biz.longitude) }}
+                    zoom={17}
+                    options={{ 
+                        disableDefaultUI: true, 
+                        zoomControl: false, // Más limpio en móvil
+                        fullscreenControl: false,
+                        gestureHandling: 'greedy' // Permite mover con un dedo
+                    }}
+                >
+                    <Marker position={{ lat: parseFloat(biz.latitude), lng: parseFloat(biz.longitude) }} />
+                </GoogleMap>
+            ) : (
+                <CoverImage bg="https://thehappening.com/wp-content/uploads/2024/02/captura-de-pantalla-2023-05-17-a-la-s-52813-pm-1.jpg" />
+            )}
+        </RightPane>
+
+        {/* --- LEFT PANE (BOTTOM SHEET EN MÓVIL) --- */}
+        <LeftPane style={{ height: window.innerWidth <= 768 ? `${sheetHeight}vh` : '100%' }}>
+          <SheetHandle onTouchStart={handleTouchStart}
+             onTouchMove={handleTouchMove}
+             onTouchEnd={handleTouchEnd}
+          />
           <ScrollArea>
             <Header>
-              <IconButton onClick={() => navigate(-1)}>
-                <IoArrowBack />
-              </IconButton>
-              <RatingBadge>
-                <IoStar /> 4.8 (1k+ Opiniones)
-              </RatingBadge>
+              <div className="desktop-back">
+                  <IconButton onClick={() => navigate(-1)}><IoArrowBack /></IconButton>
+              </div>
+              <RatingBadge><IoStar /> 4.8 (1k+)</RatingBadge>
             </Header>
-
             <div style={{ marginTop: "1rem" }}>
               <Title>{biz.name}</Title>
               <Subtitle>{biz.about}</Subtitle>
-
-              <InfoRow>
-                <IoLocationSharp /> {formatAddress(biz.address)}
-              </InfoRow>
-
+              <InfoRow><IoLocationSharp /> {formatAddress(biz.address)}</InfoRow>
               <SocialInlineRow>
                 {biz.social_links?.facebook && (
-                  <SocialLink
-                    href={biz.social_links.facebook}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <SocialLink href={biz.social_links.facebook} target="_blank" rel="noreferrer">
                     <div style={{ display: "flex", minWidth: "20px" }}>
-                      <IoLogoFacebook 
-                        size={22} 
-                        style={{ color: "#1877F2", fill: "#1877F2" }}
-                      />
+                      <IoLogoFacebook size={22} style={{ color: "#1877F2", fill: "#1877F2" }} />
                     </div>
                     {extractHandle(biz.social_links.facebook)}
                   </SocialLink>
                 )}
-
                 {biz.social_links?.instagram && (
-                  <SocialLink
-                    href={biz.social_links.instagram}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <SocialLink href={biz.social_links.instagram} target="_blank" rel="noreferrer">
                     <div style={{ display: "flex", minWidth: "20px" }}>
-                      <IoLogoInstagram 
-                        size={22} 
-                        style={{ color: "#E4405F", fill: "#E4405F" }}
-                      />
+                      <IoLogoInstagram size={22} style={{ color: "#E4405F", fill: "#E4405F" }} />
                     </div>
                     {extractHandle(biz.social_links.instagram)}
                   </SocialLink>
                 )}
-
                 {biz.social_links?.twitter && (
-                  <SocialLink
-                    href={biz.social_links.twitter}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <SocialLink href={biz.social_links.twitter} target="_blank" rel="noreferrer">
                     <div style={{ display: "flex", minWidth: "20px" }}>
-                      <IoLogoTwitter 
-                        size={22} 
-                        style={{ color: "#000000", fill: "#000000" }}
-                      />
+                      <IoLogoTwitter size={22} style={{ color: "#000000", fill: "#000000" }} />
                     </div>
                     {extractHandle(biz.social_links.twitter)}
                   </SocialLink>
                 )}
-
               </SocialInlineRow>
             </div>
-
             <Divider />
-
             <ActionsRow>
-              <ActionBtn onClick={() => navigate(`/chat?businessId=${biz.id}`)}>
-                <IoChatbubblesOutline /> Chat
-              </ActionBtn>
-
-              <ActionBtn onClick={copiarURL}>
-                <IoShareSocial /> Compartir
-              </ActionBtn>
-
-              <ActionBtn>
-                <IoHeartOutline /> Favoritos
-              </ActionBtn>
-
-              <ActionBtn onClick={() => setShowSendModal(true)}>
-                <IoChevronForwardOutline /> Enviar
-              </ActionBtn>
+              <ActionBtn onClick={() => navigate(`/chat?businessId=${biz.id}`)}><IoChatbubblesOutline /> Chat</ActionBtn>
+              <ActionBtn onClick={copiarURL}><IoShareSocial /> Compartir</ActionBtn>
+              <ActionBtn><IoHeartOutline /> Favoritos</ActionBtn>
+              <ActionBtn onClick={() => setShowSendModal(true)}><IoChevronForwardOutline /> Enviar</ActionBtn>
             </ActionsRow>
-
             <Divider />
-
-            <TabsNav
-              ref={tabsRef}
-              onMouseDown={(e) => {
-                isDown = true;
-                startX = e.pageX - tabsRef.current.offsetLeft;
-                scrollLeft = tabsRef.current.scrollLeft;
-              }}
-              onMouseLeave={() => (isDown = false)}
-              onMouseUp={() => (isDown = false)}
-              onMouseMove={(e) => {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX - tabsRef.current.offsetLeft;
-                const walk = (x - startX) * 1;
-                tabsRef.current.scrollLeft = scrollLeft - walk;
-              }}
-            >
-              {[
-                "Servicios",
-                "Especialistas",
-                "Paquetes",
-                "Galería",
-                "Opiniones",
-                "Sobre Nosotros",
-              ].map((t, i) => (
-                <TabButton key={i} active={tab === i} onClick={() => setTab(i)}>
-                  {t}
+            <TabsNav ref={tabsRef} onMouseDown={(e) => { isDown = true; startX = e.pageX - tabsRef.current.offsetLeft; scrollLeft = tabsRef.current.scrollLeft; }} onMouseLeave={() => (isDown = false)} onMouseUp={() => (isDown = false)} onMouseMove={(e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - tabsRef.current.offsetLeft; const walk = (x - startX) * 1; tabsRef.current.scrollLeft = scrollLeft - walk; }}>
+              {availableTabs.map((t) => (
+                <TabButton key={t.id} active={activeTab === t.id} onClick={() => setActiveTab(t.id)}>
+                  {t.label}
                 </TabButton>
               ))}
             </TabsNav>
-
             <TabContent>
-              {tab === 0 &&
-                biz.services.map((s, i) => (
-                  <ServiceCard key={s.id}>
-                    <ServiceName>{s.name}</ServiceName>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <ServiceTypes>{s.features.length} Tipos</ServiceTypes>
-                      <IoChevronForwardOutline color="#666" />
-                    </div>
-                  </ServiceCard>
-                ))}
-              {tab === 1 && (
+              {activeTab === "services" && biz.services?.map((s) => (
+                <ServiceCard key={s.id}>
+                  <ServiceName>{s.name}</ServiceName>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <ServiceTypes>{s.features?.length || 0} Tipos</ServiceTypes>
+                    <IoChevronForwardOutline color="#666" />
+                  </div>
+                </ServiceCard>
+              ))}
+              {activeTab === "specialists" && (
                 <SpecGrid>
-                  {biz.specialists.map((sp) => (
+                  {biz.specialists?.map((sp) => (
                     <SpecCard key={sp.id}>
-                      <SpecImg
-                        src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`}
-                        alt={sp.name}
-                      />
+                      <SpecImg src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`} alt={sp.name} />
                       <SpecName>{sp.name}</SpecName>
                       <SpecRole>{sp.role}</SpecRole>
                     </SpecCard>
                   ))}
                 </SpecGrid>
               )}
-              {tab === 2 &&
-                biz.packages.map((pkg) => (
-                  <PackCard key={pkg.id}>
-                    <PackImg
-                      src={`https://oral-susan-utt-eab6c28f.koyeb.app/${pkg.photo}`}
-                      alt={pkg.name}
-                    />
-                    <PackInfo>
-                      <PackTitle>{pkg.name}</PackTitle>
-                      <PackDesc>{pkg.description}</PackDesc>
-                      <PackFooter>
-                        <PackPrice>MX${pkg.price}</PackPrice>
-                        <PackBtn onClick={() => setShowModal(true)}>
-                          Reservar
-                        </PackBtn>
-                      </PackFooter>
-                    </PackInfo>
-                  </PackCard>
-                ))}
-              {tab === 3 && (
+              {activeTab === "packages" && biz.packages?.map((pkg) => (
+                <PackCard key={pkg.id}>
+                  <PackImg src={`https://oral-susan-utt-eab6c28f.koyeb.app/${pkg.photo}`} alt={pkg.name} />
+                  <PackInfo>
+                    <PackTitle>{pkg.name}</PackTitle>
+                    <PackDesc>{pkg.description}</PackDesc>
+                    <PackFooter>
+                      <PackPrice>MX${pkg.price}</PackPrice>
+                      <PackBtn onClick={() => setShowModal(true)}>Reservar</PackBtn>
+                    </PackFooter>
+                  </PackInfo>
+                </PackCard>
+              ))}
+              {activeTab === "gallery" && (
                 <GalleryGrid>
-                  {biz.gallery.map((url, i) => (
-                    <GalleryImg
-                      key={i}
-                      src={`https://oral-susan-utt-eab6c28f.koyeb.app/${url}`}
-                      alt="gallery"
-                    />
+                  {biz.gallery?.map((item, i) => (
+                    <GalleryImg key={i} src={`https://oral-susan-utt-eab6c28f.koyeb.app/${item.file_url || item}`} alt="gallery" />
                   ))}
                 </GalleryGrid>
               )}
-              {tab === 4 && (
-                <>
+              {activeTab === "reviews" && (
+                 <>
                   <ReviewsHeader>
                     <h3 style={{ margin: 0, color: "#232C5C" }}>Opiniones</h3>
-                    <AddReviewBtn>
-                      <IoCreateOutline /> Agregar reseña
-                    </AddReviewBtn>
+                    <AddReviewBtn><IoCreateOutline /> Agregar reseña</AddReviewBtn>
                   </ReviewsHeader>
                   <FilterRow>
                     <FilterBtn># Filtro</FilterBtn>
-                    <SearchInput>
-                      <IoSearchOutline />
-                      <input placeholder="Buscar opiniones" />
-                    </SearchInput>
+                    <SearchInput><IoSearchOutline /><input placeholder="Buscar opiniones" /></SearchInput>
                   </FilterRow>
                   <ChipsRow>
-                    {["Más antigüos", "Recientes", "Con fotos"].map((ch) => (
-                      <Chip
-                        key={ch}
-                        active={activeChip === ch}
-                        onClick={() => setActiveChip(ch)}
-                      >
-                        {ch}
-                      </Chip>
-                    ))}
+                    {["Más antigüos", "Recientes", "Con fotos"].map((ch) => <Chip key={ch} active={activeChip === ch} onClick={() => setActiveChip(ch)}>{ch}</Chip>)}
                   </ChipsRow>
                   {REVIEWS.map((r, i) => (
                     <ReviewCard key={i}>
-                      <ReviewHeader>
-                        <ReviewUser>{r.user}</ReviewUser>
-                        <ReviewMeta>
-                          {r.followers} Seguidores · {r.time}
-                        </ReviewMeta>
-                      </ReviewHeader>
-                      <RatingRow>
-                        {[...Array(5)].map((_, k) => (
-                          <IoStar
-                            key={k}
-                            color={k < r.rating ? "#FFD600" : "#ccc"}
-                          />
-                        ))}
-                        <strong style={{ marginLeft: 4 }}>
-                          {r.rating.toFixed(1)}
-                        </strong>
-                      </RatingRow>
-                      <ReviewText>{r.text}</ReviewText>
+                       <ReviewHeader><ReviewUser>{r.user}</ReviewUser><ReviewMeta>{r.time}</ReviewMeta></ReviewHeader>
+                       <RatingRow>{[...Array(5)].map((_, k) => <IoStar key={k} color={k < r.rating ? "#FFD600" : "#ccc"} />)}</RatingRow>
+                       <ReviewText>{r.text}</ReviewText>
                     </ReviewCard>
                   ))}
-                </>
+                 </>
               )}
-              {tab === 5 && (
+              {activeTab === "about" && (
                 <>
                   <h3 style={{ margin: 0, color: "#232C5C" }}>About Us</h3>
-                  <AboutText>
-                    {readMore ? biz.about : biz.about.slice(0, 100) + "..."}
-                    {!readMore && (
-                      <ReadMore onClick={() => setReadMore(true)}>
-                        {" "}
-                        Leer más
-                      </ReadMore>
-                    )}
-                  </AboutText>
-                  <h3 style={{ margin: "1rem 0 0", color: "#232C5C" }}>
-                    Horarios
-                  </h3>
+                  <AboutText>{readMore ? biz.about : (biz.about?.slice(0, 100) || "") + "..."}{!readMore && <ReadMore onClick={() => setReadMore(true)}> Leer más</ReadMore>}</AboutText>
+                  <h3 style={{ margin: "1rem 0 0", color: "#232C5C" }}>Horarios</h3>
                   <Divider />
                   <HoursTable>
-                    {biz.schedules.map((w, i) => (
-                      <HourRow key={i}>
-                        <HourDay>{w.day}</HourDay>
-                        <HourTime>
-                          {w.from.slice(0, 5)} - {w.to.slice(0, 5)}
-                        </HourTime>
-                      </HourRow>
+                    {biz.schedules?.map((w, i) => (
+                      <HourRow key={i}><HourDay>{w.day}</HourDay><HourTime>{w.from.slice(0, 5)} - {w.to.slice(0, 5)}</HourTime></HourRow>
                     ))}
                   </HoursTable>
                 </>
               )}
             </TabContent>
           </ScrollArea>
-
-          <BookWrapper>
-            <Appointment onClick={() => setShowModal(true)}>
-              Reservar
-            </Appointment>
-          </BookWrapper>
+          <BookWrapper><Appointment onClick={() => setShowModal(true)}>Reservar</Appointment></BookWrapper>
         </LeftPane>
 
-        <RightPane />
-
         {showModal && (
-          <ModalOverlay>
-            <ModalContent>
-              <CloseButton onClick={() => setShowModal(false)}>
-                <IoClose />
-              </CloseButton>
-
-              <SectionTitle>{biz.name}</SectionTitle>
-              <Subtitle>{biz.about}</Subtitle>
-              <InfoRow>
-                <IoLocationSharp /> {formatAddress(biz.address)}
-              </InfoRow>
-
-              <SectionTitle>Selecciona Día</SectionTitle>
-              <ScrollX
-                ref={diasRef}
-                onMouseDown={(e) => {
-                  isDownDias = true;
-                  startXDias = e.pageX - diasRef.current.offsetLeft;
-                  scrollLeftDias = diasRef.current.scrollLeft;
-                }}
-                onMouseLeave={() => (isDownDias = false)}
-                onMouseUp={() => (isDownDias = false)}
-                onMouseMove={(e) => {
-                  if (!isDownDias) return;
-                  e.preventDefault();
-                  const x = e.pageX - diasRef.current.offsetLeft;
-                  const walk = (x - startXDias) * 1;
-                  diasRef.current.scrollLeft = scrollLeftDias - walk;
-                }}
-              >
-                {diasDisponibles.map((d) => (
-                  <Pill
-                    key={d.date}
-                    active={selDay === d.date}
-                    onClick={() => setSelDay(d.date)}
-                  >
-                    {d.label}
-                  </Pill>
-                ))}
-              </ScrollX>
-
-              <SectionTitle>Selecciona Hora</SectionTitle>
-              <ScrollX
-                ref={horasRef}
-                onMouseDown={(e) => {
-                  isDownHoras = true;
-                  startXHoras = e.pageX - horasRef.current.offsetLeft;
-                  scrollLeftHoras = horasRef.current.scrollLeft;
-                }}
-                onMouseLeave={() => (isDownHoras = false)}
-                onMouseUp={() => (isDownHoras = false)}
-                onMouseMove={(e) => {
-                  if (!isDownHoras) return;
-                  e.preventDefault();
-                  const x = e.pageX - horasRef.current.offsetLeft;
-                  const walk = (x - startXHoras) * 1;
-                  horasRef.current.scrollLeft = scrollLeftHoras - walk;
-                }}
-              >
-                {(() => {
-                  const dayObj = diasDisponibles.find((d) => d.date === selDay);
-                  const allTimes = dayObj
-                    ? generarHoras(
-                        dayObj.scheduleObj.from,
-                        dayObj.scheduleObj.to
-                      )
-                    : [];
-
-                  const available = allTimes.filter(
-                    (t) => !takenTimes.includes(t)
-                  );
-
-                  return available.map((t) => {
-                    const isTaken = takenTimes.includes(t);
-                    return (
-                      <Pill
-                        key={t}
-                        active={selTime === t}
-                        onClick={() => !isTaken && setSelTime(t)}
-                        disabled={isTaken}
-                        style={
-                          isTaken
-                            ? {
-                                cursor: "not-allowed",
-                                opacity: 0.45,
-                                textDecoration: "line-through",
-                              }
-                            : undefined
-                        }
-                      >
-                        {t}
-                      </Pill>
-                    );
-                  });
-                })()}
-              </ScrollX>
-
-              <SectionTitle>Especialista</SectionTitle>
-              <SpecialistPick>
-                {biz.specialists.map((sp) => (
-                  <SpecPickCard
-                    key={sp.id}
-                    active={selSpec === sp.name}
-                    onClick={() => setSelSpec(sp.name)}
-                  >
-                    <SpecPickImg
-                      src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`}
-                      alt={sp.name}
-                      active={selSpec === sp.name}
-                    />
-                    <SpecPickName>{sp.name}</SpecPickName>
-                  </SpecPickCard>
-                ))}
-              </SpecialistPick>
-
-              <SectionTitle>Servicio / Paquete</SectionTitle>
-              <ScrollX>
-                {[
-                  ...biz.services.map((s) => s.name),
-                  ...biz.packages.map((p) => p.name),
-                ].map((opt) => (
-                  <Pill
-                    key={opt}
-                    active={selSvc === opt}
-                    onClick={() => setSelSvc(opt)}
-                  >
-                    {opt}
-                  </Pill>
-                ))}
-              </ScrollX>
-
-              {selectedPrice !== null && (
-                <div
-                  style={{
-                    fontWeight: 600,
-                    color: "#3747ec",
-                    fontSize: "1.1rem",
-                    margin: "10px 0 15px",
-                    textAlign: "center",
-                  }}
-                >
-                  Precio: MX${selectedPrice}
-                </div>
-              )}
-
-              <ConfirmBtn onClick={confirmarReserva}>
-                Confirmar Reserva
-              </ConfirmBtn>
-            </ModalContent>
-          </ModalOverlay>
+             <ModalOverlay>
+                <ModalContent>
+                    <CloseButton onClick={() => setShowModal(false)}><IoClose /></CloseButton>
+                    <SectionTitle>{biz.name}</SectionTitle>
+                    <Subtitle>{biz.about}</Subtitle>
+                    <InfoRow><IoLocationSharp /> {formatAddress(biz.address)}</InfoRow>
+                    <SectionTitle>Selecciona Día</SectionTitle>
+                    <ScrollX ref={diasRef} onMouseDown={(e) => { isDownDias = true; startXDias = e.pageX - diasRef.current.offsetLeft; scrollLeftDias = diasRef.current.scrollLeft; }} onMouseLeave={() => (isDownDias = false)} onMouseUp={() => (isDownDias = false)} onMouseMove={(e) => { if (!isDownDias) return; e.preventDefault(); const x = e.pageX - diasRef.current.offsetLeft; const walk = (x - startXDias) * 1; diasRef.current.scrollLeft = scrollLeftDias - walk; }}>
+                      {diasDisponibles.map((d) => <Pill key={d.date} active={selDay === d.date} onClick={() => setSelDay(d.date)}>{d.label}</Pill>)}
+                    </ScrollX>
+                    <SectionTitle>Selecciona Hora</SectionTitle>
+                    <ScrollX ref={horasRef} onMouseDown={(e) => { isDownHoras = true; startXHoras = e.pageX - horasRef.current.offsetLeft; scrollLeftHoras = horasRef.current.scrollLeft; }} onMouseLeave={() => (isDownHoras = false)} onMouseUp={() => (isDownHoras = false)} onMouseMove={(e) => { if (!isDownHoras) return; e.preventDefault(); const x = e.pageX - horasRef.current.offsetLeft; const walk = (x - startXHoras) * 1; horasRef.current.scrollLeft = scrollLeftHoras - walk; }}>
+                      {(() => {
+                        const dayObj = diasDisponibles.find((d) => d.date === selDay);
+                        const allTimes = dayObj ? generarHoras(dayObj.scheduleObj.from, dayObj.scheduleObj.to, 30) : [];
+                        const available = allTimes.filter((t) => !takenTimes.includes(t));
+                        return available.map((t) => {
+                          const isTaken = takenTimes.includes(t);
+                          return <Pill key={t} active={selTime === t} onClick={() => !isTaken && setSelTime(t)} disabled={isTaken} style={isTaken ? { cursor: "not-allowed", opacity: 0.45, textDecoration: "line-through" } : undefined}>{t}</Pill>;
+                        });
+                      })()}
+                    </ScrollX>
+                    <SectionTitle>Especialista</SectionTitle>
+                    <SpecialistPick>
+                      {biz.specialists.map((sp) => (
+                        <SpecPickCard key={sp.id} active={selSpec === sp.name} onClick={() => setSelSpec(sp.name)}>
+                          <SpecPickImg src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`} alt={sp.name} active={selSpec === sp.name} />
+                          <SpecPickName>{sp.name}</SpecPickName>
+                        </SpecPickCard>
+                      ))}
+                    </SpecialistPick>
+                    <SectionTitle>Servicio / Paquete</SectionTitle>
+                    <ScrollX>
+                      {[...(biz.services || []).map((s) => s.name), ...(biz.packages || []).map((p) => p.name)].map((opt) => (
+                        <Pill key={opt} active={selSvc === opt} onClick={() => setSelSvc(opt)}>{opt}</Pill>
+                      ))}
+                    </ScrollX>
+                    {selectedPrice !== null && <div style={{ fontWeight: 600, color: "#3747ec", fontSize: "1.1rem", margin: "10px 0 15px", textAlign: "center" }}>Precio: MX${selectedPrice}</div>}
+                     <ConfirmBtn onClick={confirmarReserva}>Confirmar Reserva</ConfirmBtn>
+                </ModalContent>
+             </ModalOverlay>
         )}
         {showSendModal && (
-          <ModalOverlay>
-            <ModalContent>
-              <CloseButton onClick={() => setShowSendModal(false)}>
-                <IoClose />
-              </CloseButton>
-              <SectionTitle>Enviar a…</SectionTitle>
-              <p style={{ marginTop: 0, color: "#666" }}>
-                Selecciona un contacto para compartir este negocio.
-              </p>
-
-              <PeopleList>
-                {CONTACTOS_MOCK.map((p) => (
-                  <PersonItem key={p.id}>
-                    <PersonMeta>
-                      <PersonImg src={p.photo} alt={p.name} />
-                      <div>
-                        <div style={{ fontWeight: 700, color: "#232c5c" }}>
-                          {p.name}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#6a6f85" }}>
-                          Contacto reciente
-                        </div>
-                      </div>
-                    </PersonMeta>
-                    <SendBtn onClick={() => enviarURLaContacto(p.id)}>
-                      Enviar
-                    </SendBtn>
-                  </PersonItem>
-                ))}
-              </PeopleList>
-            </ModalContent>
-          </ModalOverlay>
+            <ModalOverlay>
+               <ModalContent>
+                  <CloseButton onClick={() => setShowSendModal(false)}><IoClose /></CloseButton>
+                  <SectionTitle>Enviar a...</SectionTitle>
+                  <PeopleList>
+                    {CONTACTOS_MOCK.map((p) => (
+                      <PersonItem key={p.id}>
+                        <PersonMeta>
+                          <PersonImg src={p.photo} alt={p.name} />
+                          <div><div style={{ fontWeight: 700, color: "#232c5c" }}>{p.name}</div><div style={{ fontSize: 12, color: "#6a6f85" }}>Contacto reciente</div></div>
+                        </PersonMeta>
+                        <SendBtn onClick={() => enviarURLaContacto(p.id)}>Enviar</SendBtn>
+                      </PersonItem>
+                    ))}
+                  </PeopleList>
+               </ModalContent>
+            </ModalOverlay>
         )}
       </Page>
     </>

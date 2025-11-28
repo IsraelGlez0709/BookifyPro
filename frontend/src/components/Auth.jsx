@@ -11,17 +11,28 @@ const CARD_WIDTH = 450;
 const GlobalStyle = createGlobalStyle`
   *, *::before, *::after { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+  
+  /* En móvil permitimos el scroll en el body por si acaso, aunque la card tendrá su propio scroll */
+  @media (max-width: 768px) {
+    html, body { overflow: auto; }
+  }
 `;
 
 const Container = styled.div`
   height: 100vh;
   width: 100vw;
-  padding: 2rem;
   background: linear-gradient(135deg, #f7f8fd 0%, #e3f2fd 50%);
   display: flex;
   justify-content: center;
   align-items: center;
   font-family: "Poppins", sans-serif;
+  
+  /* Ajustes Móvil: Padding pequeño para aprovechar ancho */
+  @media (max-width: 768px) {
+    padding: 10px; 
+    height: auto;
+    min-height: 100dvh; /* 100dvh ayuda con la barra de direcciones del navegador móvil */
+  }
 `;
 
 const Content = styled.div`
@@ -29,7 +40,15 @@ const Content = styled.div`
   width: 100%;
   max-width: calc(100vw - 10rem);
   height: calc(100vh - 6rem);
-  overflow: hidden;
+  
+  /* En móvil quitamos el contenedor relativo rígido */
+  @media (max-width: 768px) {
+    max-width: 100%;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 `;
 
 const CardWrapper = styled.div`
@@ -48,6 +67,7 @@ const CardWrapper = styled.div`
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  z-index: 10;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -56,8 +76,22 @@ const CardWrapper = styled.div`
     background: rgba(0, 0, 0, 0.2);
     border-radius: 3px;
   }
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+  /* --- MODIFICACIONES MÓVIL --- */
+  @media (max-width: 768px) {
+    position: relative; /* Ya no absoluto, para centrarlo bien */
+    left: auto !important;
+    width: 100%;
+    max-width: 420px; /* Ancho máximo para que no se vea gigante en tablets */
+    
+    /* Altura Dinámica: */
+    height: auto; 
+    max-height: 85vh; /* Nunca más alto que el 85% de la pantalla */
+    
+    border-radius: 16px; /* Bordes redondeados completos */
+    padding: 1.5rem; /* Menos padding para ganar espacio lateral */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
 `;
 
 const ImageWrapper = styled.div`
@@ -77,6 +111,10 @@ const ImageWrapper = styled.div`
     height: 100%;
     object-fit: cover;
   }
+
+  @media (max-width: 768px) {
+    display: none; /* Ocultamos imagen en móvil */
+  }
 `;
 
 const Title = styled.h1`
@@ -84,6 +122,11 @@ const Title = styled.h1`
   color: #232c5c;
   text-align: center;
   margin-bottom: 0.5rem;
+
+  @media (max-width: 768px) {
+    font-size: 1.7rem;
+    margin-top: 0.5rem;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -114,8 +157,13 @@ const Input = styled.input`
   color: #232c5c;
   margin-bottom: 0.7rem;
   outline: none;
+  background: #fff; /* Asegurar fondo blanco */
   &::placeholder {
     color: #b2b8cf;
+  }
+  /* En móvil, inputs un poco más altos para facilitar el toque */
+  @media (max-width: 768px) {
+     padding: 0.85rem 1rem; 
   }
 `;
 
@@ -219,6 +267,8 @@ const ToggleContainer = styled.p`
   margin-top: 2rem;
   font-size: 0.875rem;
   color: #888;
+  /* Margen extra abajo para que no se corte en móvil al hacer scroll */
+  padding-bottom: 1rem; 
 `;
 
 const ToggleLink = styled.span`

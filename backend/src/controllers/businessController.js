@@ -18,14 +18,24 @@ export async function createBusiness(req, res) {
       name, type, address, about,
       services = [], specialists = [],
       packages = [], gallery = [], schedules = [],
-      plan_id
+      plan_id, categories
     } = req.body;
 
     let addressObj = {};
+    let categoriesArr = [];
+
     try {
       addressObj = JSON.parse(address);
     } catch (err) {
       console.error("Error al parsear dirección:", err);
+    }
+
+    try {
+      if (categories) {
+        categoriesArr = JSON.parse(categories);
+      }
+    } catch (err) {
+      console.error("Error al parsear categories:", err);
     }
 
     const businessId = uuidv4();
@@ -45,7 +55,8 @@ export async function createBusiness(req, res) {
       address_city: addressObj.city || '',
       address_state: addressObj.state || '',
       latitude: addressObj.lat || null,
-      longitude: addressObj.lng || null
+      longitude: addressObj.lng || null,
+      categories: categoriesArr
     });
 
     for (let svc of JSON.parse(services)) {

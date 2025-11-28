@@ -5,21 +5,22 @@ export async function createBusiness({
     id, user_id, name, type, about, plan_id,
     address_street, address_ext_num, address_int_num, 
     address_colony, address_zip, address_city, address_state,
-    latitude, longitude
+    latitude, longitude, categories
 }) {
+  const categoriesJson = categories ? JSON.stringify(categories) : '[]';
   await db.query(
     `INSERT INTO businesses (
         id, user_id, name, type, about, plan_id,
         address_street, address_ext_num, address_int_num, 
         address_colony, address_zip, address_city, address_state,
-        latitude, longitude 
+        latitude, longitude, categories
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
         id, user_id, name, type, about, plan_id,
         address_street, address_ext_num, address_int_num, 
         address_colony, address_zip, address_city, address_state,
-        latitude, longitude
+        latitude, longitude, categoriesJson
     ]
   );
 }
@@ -31,7 +32,7 @@ export async function getBusinessById(business_id) {
         address_street, address_ext_num, address_int_num,
         address_colony, address_zip, address_city, address_state,
         latitude, longitude,
-        phone_numbers, social_links
+        phone_numbers, social_links, categories
      FROM businesses
      WHERE id = ?`,
     [business_id]

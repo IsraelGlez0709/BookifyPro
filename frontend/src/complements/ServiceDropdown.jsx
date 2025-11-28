@@ -25,6 +25,18 @@ const DropdownBox = styled.div`
     0% { transform: translateY(-10px); opacity: 0; }
     100% { transform: translateY(0); opacity: 1; }
   }
+
+  /* --- MÓVIL: Estilo acordeón sin padding extra --- */
+  @media (max-width: 768px) {
+    position: relative;
+    top: 0; left: 0;
+    width: 100%;
+    min-width: auto;
+    box-shadow: none;
+    background: transparent;
+    padding: 0; /* Padding 0 para alinear a la izquierda */
+    animation: none;
+  }
 `;
 
 const MenuList = styled.ul`
@@ -43,6 +55,17 @@ const MenuItem = styled.li`
     color: #3747EC;
     border-left: 3px solid #3747EC;
   }
+
+  /* --- MÓVIL --- */
+  @media (max-width: 768px) {
+    color: #ccc;
+    padding: 0.5rem 0; /* Menos padding vertical */
+    &:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+        border-left: 3px solid #f5c065;
+    }
+  }
 `;
 
 export default function ServicesDropdown({ closeMenu }) {
@@ -50,13 +73,16 @@ export default function ServicesDropdown({ closeMenu }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        closeMenu();
-      }
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) {
+        function handleClickOutside(e) {
+            if (ref.current && !ref.current.contains(e.target)) {
+                closeMenu();
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [closeMenu]);
 
   return (
@@ -65,7 +91,8 @@ export default function ServicesDropdown({ closeMenu }) {
         {SERVICES.map((svc) => (
           <MenuItem
             key={svc.name}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation(); // Detenemos propagación aquí también
               closeMenu();
               navigate(svc.link);
             }}

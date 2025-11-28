@@ -20,6 +20,17 @@ import {
   IoRemoveCircleOutline,
 } from "react-icons/io5";
 
+// --- CONSTANTES DEL SISTEMA ---
+const SYSTEM_CATEGORIES = [
+  { id: "cortes", label: "Cortes de Cabello" },
+  { id: "barberia", label: "Barbería / Barba" },
+  { id: "maquillaje", label: "Maquillaje" },
+  { id: "masaje", label: "Masajes / Spa" },
+  { id: "unas", label: "Uñas / Manicure" },
+  { id: "cejas", label: "Cejas / Pestañas" }
+];
+
+// --- ESTILOS GLOBALES ---
 const GlobalStyle = createGlobalStyle`
   *, *::before, *::after { box-sizing: border-box }
   html, body {
@@ -38,10 +49,20 @@ const GlobalStyle = createGlobalStyle`
   textarea { resize: none; }
 `;
 
+// --- STYLED COMPONENTS ---
+
 const WizardContainer = styled.div`
   display: flex;
   justify-content: center;
   padding-top: 100px;
+  padding-bottom: 40px;
+  
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    padding-top: 130px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 `;
 
 const FormWrapper = styled.div`
@@ -49,6 +70,12 @@ const FormWrapper = styled.div`
   max-width: 800px;
   margin-right: 360px;
   padding: 0 1rem;
+
+  @media (max-width: 1024px) {
+    margin-right: 0;
+    max-width: 100%;
+    padding: 0;
+  }
 `;
 
 const ProgressWrapper = styled.div`
@@ -59,6 +86,11 @@ const ProgressWrapper = styled.div`
   background: #f7f8fd;
   padding: 1rem 0;
   z-index: 20;
+
+  @media (max-width: 1024px) {
+    right: 1rem;
+    left: 1rem;
+  }
 `;
 
 const ProgressContainer = styled.div`
@@ -66,6 +98,10 @@ const ProgressContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
+
+  @media (max-width: 600px) {
+    padding: 0 10px;
+  }
 `;
 
 const Track = styled.div`
@@ -94,6 +130,11 @@ const ProgressBar = styled.div`
   gap: 2rem;
   position: relative;
   z-index: 1;
+
+  @media (max-width: 600px) {
+    gap: 0;
+    justify-content: space-between;
+  }
 `;
 
 const StepIcon = styled.div`
@@ -101,6 +142,10 @@ const StepIcon = styled.div`
   color: ${(p) => (p.active ? "#3747EC" : "#A0AEC0")};
   transform: ${(p) => (p.active ? "scale(1.2)" : "none")};
   transition: color 300ms, transform 300ms;
+
+  @media (max-width: 600px) {
+    font-size: 1.2rem;
+  }
 `;
 
 const StepLabel = styled.div`
@@ -108,6 +153,10 @@ const StepLabel = styled.div`
   color: ${(p) => (p.active ? "#3747EC" : "#A0AEC0")};
   text-align: center;
   transition: color 300ms;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const SummaryPanel = styled.div`
@@ -122,6 +171,7 @@ const SummaryPanel = styled.div`
   max-height: calc(100vh - 100px);
   overflow-y: auto;
   z-index: 10;
+
   h3 {
     margin-top: 0;
     color: #3747ec;
@@ -151,6 +201,15 @@ const SummaryPanel = styled.div`
       color: #4a5568;
     }
   }
+
+  @media (max-width: 1024px) {
+    position: static;
+    width: 100%;
+    max-height: none;
+    margin-top: 2rem;
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+  }
 `;
 
 const SectionTitle = styled.h3`
@@ -168,6 +227,10 @@ const Card = styled.div`
   padding: 1.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 1.5rem;
+
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
 `;
 
 const FieldRow = styled.div`
@@ -180,6 +243,11 @@ const FieldRow = styled.div`
 const InputWrapper = styled.div`
   position: relative;
   flex: 1 1 240px;
+  
+  @media (max-width: 480px) {
+    flex: 1 1 100%;
+  }
+
   svg {
     position: absolute;
     top: 50%;
@@ -210,8 +278,52 @@ const Label = styled.label`
     border-radius: 6px;
     font-size: 0.95rem;
     min-height: 100px;
+    width: 100%;
   }
 `;
+
+// --- NUEVOS COMPONENTES ESTILIZADOS PARA CATEGORÍAS ---
+const CategoryWrapper = styled.div`
+  margin-bottom: 1rem;
+  width: 100%;
+`;
+
+const CategoryLabel = styled.h4`
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #232c5c;
+`;
+
+const HelperText = styled.span`
+  display: block;
+  font-size: 0.8rem;
+  color: #718096;
+  margin-bottom: 0.8rem;
+`;
+
+const TagsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+const TagChip = styled.div`
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid ${(p) => (p.selected ? "#3747EC" : "#CBD5E0")};
+  background: ${(p) => (p.selected ? "#EEF2FB" : "#FFF")};
+  color: ${(p) => (p.selected ? "#3747EC" : "#4A5568")};
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    border-color: #3747EC;
+  }
+`;
+// -----------------------------------------------------
 
 const CheckboxLabel = styled.label`
   display: flex;
@@ -227,6 +339,10 @@ const DynamicList = styled.div`
   padding: 1rem;
   background: #fdfdfd;
   margin-bottom: 1rem;
+
+  @media (max-width: 600px) {
+    padding: 0.75rem;
+  }
 `;
 
 const ItemRow = styled.div`
@@ -243,6 +359,7 @@ const RemoveBtn = styled.button.attrs({ type: "button" })`
   color: #e53e3e;
   cursor: pointer;
   font-size: 1.2rem;
+  padding: 0.5rem;
 `;
 
 const FileInputLabel = styled.label`
@@ -299,6 +416,15 @@ const ActionButtons = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+
+  @media (max-width: 480px) {
+    flex-direction: column-reverse;
+    gap: 1rem;
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 `;
 
 const Button = styled.button.attrs({ type: "button" })`
@@ -312,6 +438,8 @@ const Button = styled.button.attrs({ type: "button" })`
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.95rem;
+  white-space: nowrap;
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -377,6 +505,9 @@ export default function BusinessRegister() {
     { day: "Lunes", from: "09:00", to: "17:00" },
   ]);
 
+  // ESTADO NUEVO PARA CATEGORÍAS
+  const [selectedCategories, setSelectedCategories] = useState([]);
+
   const addItem = (arr, setArr, tpl) =>
     setArr((a) => [...a, JSON.parse(JSON.stringify(tpl))]);
   const updateItem = (arr, setArr, i, k, v) => {
@@ -392,12 +523,21 @@ export default function BusinessRegister() {
     updateItem(arr, setArr, i, "url", url);
   };
 
+  const toggleCategory = (catId) => {
+    if (selectedCategories.includes(catId)) {
+      setSelectedCategories(selectedCategories.filter(id => id !== catId));
+    } else {
+      setSelectedCategories([...selectedCategories, catId]);
+    }
+  };
+
   const isStepValid = () => {
     switch (step) {
       case 0:
         return (
           basic.name &&
           basic.type &&
+          selectedCategories.length > 0 && // VALIDACIÓN: Al menos una categoría
           basic.address.zip &&
           basic.address.state &&
           basic.address.city &&
@@ -437,6 +577,7 @@ export default function BusinessRegister() {
     const formData = new FormData();
     formData.append("name", basic.name);
     formData.append("type", basic.type);
+    formData.append("categories", JSON.stringify(selectedCategories)); // ENVIAR CATEGORÍAS
     formData.append("address", JSON.stringify(basic.address));
     if (selectedPlanId) formData.append("plan_id", selectedPlanId);
 
@@ -506,12 +647,8 @@ export default function BusinessRegister() {
         const token = "8bb0e4c3-ee47-4e4f-8b82-8998ec2663a3";
         const url = `https://api.copomex.com/query/info_cp/${zip}?token=${token}`;
 
-        console.log("Consultando URL:", url);
-
         const req = await fetch(url);
         const data = await req.json();
-
-        console.log("Respuesta API:", data);
 
         let estado = "";
         let municipio = "";
@@ -572,7 +709,6 @@ export default function BusinessRegister() {
         const data = await res.json();
 
         if (data && data.length > 0) {
-          console.log("Coordenadas encontradas: ", data[0].lat, data[0].lon);
           setBasic((prev) => ({
             ...prev,
             address: {
@@ -648,6 +784,24 @@ export default function BusinessRegister() {
                       />
                     </InputWrapper>
                   </FieldRow>
+                  
+                  {/* SECCIÓN DE CATEGORÍAS (Integrada con Styled Components) */}
+                  <CategoryWrapper>
+                    <CategoryLabel>Categorías de búsqueda</CategoryLabel>
+                    <HelperText>Selecciona dónde quieres que aparezca tu negocio (Mínimo 1)</HelperText>
+                    <TagsContainer>
+                      {SYSTEM_CATEGORIES.map((cat) => (
+                        <TagChip 
+                          key={cat.id} 
+                          selected={selectedCategories.includes(cat.id)}
+                          onClick={() => toggleCategory(cat.id)}
+                        >
+                          {cat.label}
+                        </TagChip>
+                      ))}
+                    </TagsContainer>
+                  </CategoryWrapper>
+                  
                   <FieldRow>
                     <InputWrapper>
                       <IoLocationOutline />
@@ -669,7 +823,7 @@ export default function BusinessRegister() {
                         value={basic.address.state}
                         readOnly
                         style={{ backgroundColor: "#f4f6f8", color: "#555" }}
-                        tabIndex={-1} // Para saltar este campo con Tab
+                        tabIndex={-1}
                       />
                     </InputWrapper>
 
@@ -685,33 +839,31 @@ export default function BusinessRegister() {
                     </InputWrapper>
                   </FieldRow>
 
-                  {/* FILA 3: Colonia (Select) y Calle */}
                   <FieldRow>
                     <InputWrapper>
-                       <IoLocationOutline />
-                       {/* Si hay colonias cargadas, mostramos SELECT, si no, INPUT normal */}
-                       {colonies.length > 0 ? (
+                        <IoLocationOutline />
+                        {colonies.length > 0 ? (
                           <select
                             value={basic.address.colony}
                             onChange={(e) => updateAddress("colony", e.target.value)}
                             onBlur={fetchCoordinates}
                             required
-                            style={{ appearance: 'none', background: 'white' }} // Fix visual simple
+                            style={{ appearance: 'none', background: 'white' }}
                           >
                             <option value="">Selecciona Colonia</option>
                             {colonies.map((col, idx) => (
                               <option key={idx} value={col}>{col}</option>
                             ))}
                           </select>
-                       ) : (
-                         <input
-                           type="text"
-                           placeholder="Colonia"
-                           value={basic.address.colony}
-                           onChange={(e) => updateAddress("colony", e.target.value)}
-                           required
-                         />
-                       )}
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Colonia"
+                            value={basic.address.colony}
+                            onChange={(e) => updateAddress("colony", e.target.value)}
+                            required
+                          />
+                        )}
                     </InputWrapper>
 
                     <InputWrapper style={{ flex: 2 }}>
@@ -726,7 +878,6 @@ export default function BusinessRegister() {
                     </InputWrapper>
                   </FieldRow>
 
-                  {/* FILA 4: Números */}
                   <FieldRow>
                     <InputWrapper>
                       <input
@@ -834,6 +985,7 @@ export default function BusinessRegister() {
                   </Button>
                 </>
               )}
+              {/* RESTO DE LOS PASOS SE MANTIENE IGUAL... */}
               {step === 2 && (
                 <>
                   <SectionTitle>
@@ -1105,7 +1257,7 @@ export default function BusinessRegister() {
                   {schedules.map((s, i) => (
                     <DynamicList key={i}>
                       <ItemRow
-                        style={{ flexWrap: "nowrap", alignItems: "center" }}
+                        style={{ flexWrap: "wrap", alignItems: "center" }}
                       >
                         <InputWrapper>
                           <IoCalendarOutline />
@@ -1233,6 +1385,11 @@ export default function BusinessRegister() {
             </p>
             <p>
               <strong>Tipo:</strong> {basic.type || "-"}
+            </p>
+            <p>
+              <strong>Categorías:</strong> {selectedCategories.length > 0 ? 
+                SYSTEM_CATEGORIES.filter(c => selectedCategories.includes(c.id)).map(c => c.label).join(", ") 
+                : "-"}
             </p>
             <p>
               <strong>Dirección:</strong>
