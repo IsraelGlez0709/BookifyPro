@@ -142,3 +142,24 @@ export async function findScheduleForDay({ businessId, weekday }) {
 export async function deleteAppointmentById(id) {
   await db.query('DELETE FROM appointments WHERE id = ?', [id]);
 }
+
+export async function findAppointmentsByUser(userId) {
+  const [rows] = await db.query(
+    `SELECT 
+        a.id, a.date, a.start_time, a.status, a.amount_cents,
+        b.name AS business_name, 
+        b.address_street, b.address_ext_num, b.address_colony, b.address_city,
+        s.name AS service_name,
+        p.name AS package_name,
+        sp.name AS specialist_name
+     FROM appointments a
+     JOIN businesses b ON a.business_id = b.id
+     LEFT JOIN services s ON a.service_id = s.id
+     LEFT JOIN packages p ON a.package_id = p.id
+     LEFT JOIN specialists sp ON a.specialist_id = sp.id
+     WHERE a.user_id = ?
+     ORDER BY a.date DESC, a.start_time ASC`,
+    [userId]
+  );
+  return rows;
+}

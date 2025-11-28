@@ -1,29 +1,21 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled, { createGlobalStyle } from "styled-components";
 import { 
   IoLocationSharp, 
-  IoArrowBack,
   IoMenu,
   IoClose,
   IoNotificationsOutline,
   IoChatbubbleOutline,
   IoChevronDown,
   IoSearchOutline,
-  IoTimeOutline
+  IoCalendarOutline,
+  IoTimeOutline,
+  IoPersonOutline,
+  IoStorefrontOutline
 } from "react-icons/io5";
 import UserDropdown from "../complements/UserDropdown";
 import ServicesDropdown from "../complements/ServiceDropdown";
-
-// Mapeo para mostrar títulos bonitos
-const CATEGORY_NAMES = {
-  cortes: "Cortes de Cabello",
-  barberia: "Barbería y Barba",
-  maquillaje: "Maquillaje Profesional",
-  masaje: "Masajes y Spa",
-  unas: "Uñas y Manicure",
-  cejas: "Cejas y Pestañas"
-};
 
 // --- ESTILOS GLOBALES ---
 const GlobalStyle = createGlobalStyle`
@@ -44,7 +36,7 @@ const Page = styled.div`
   overflow-x: hidden;
 `;
 
-// --- HEADER STYLES (Copiados de Home para consistencia) ---
+// --- HEADER (Copiado de Home para consistencia) ---
 const Header = styled.header`
   background: linear-gradient(135deg, #080808 0%, #242124 50%);
   padding: 1rem 2rem;
@@ -185,89 +177,96 @@ const ProfileButton = styled.button`
 `;
 const Avatar = styled.img` width: 32px; height: 32px; border-radius: 50%; `;
 
-// --- CONTENIDO DE LA PÁGINA ---
-const PageContainer = styled.div`
+// --- CONTENIDO PRINCIPAL ---
+const Container = styled.div`
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
   flex: 1;
-  padding: 2rem 4rem;
-  @media (max-width: 768px) { padding: 1.5rem 1rem; }
+  width: 100%;
 `;
 
-const HeaderRow = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
-  gap: 1rem;
-`;
-
-const BackButton = styled.button`
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
+const PageTitle = styled.h1`
   color: #232c5c;
-  transition: all 0.2s;
-  &:hover { background: #3747ec; color: white; border-color: #3747ec; }
-`;
-
-const Title = styled.h1`
   font-size: 1.8rem;
-  color: #232c5c;
-  margin: 0;
-  span { color: #3747ec; }
-  @media (max-width: 768px) { font-size: 1.4rem; }
+  margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 10px;
 `;
 
-const Grid = styled.div`
+const TabsContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1px;
+`;
+
+const Tab = styled.button`
+  background: none;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: ${p => p.active ? '#3747ec' : '#718096'};
+  border-bottom: 3px solid ${p => p.active ? '#3747ec' : 'transparent'};
+  transition: all 0.2s;
+  &:hover { color: #3747ec; }
+`;
+
+const AppointmentsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 1.5rem;
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
+`;
+
+const AppointmentCard = styled.div`
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 5px solid ${p => p.color};
+  transition: transform 0.2s;
+  &:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+`;
+
+const BizHeader = styled.div`
+  display: flex; justify-content: space-between; align-items: flex-start;
+`;
+
+const BizName = styled.h3`
+  margin: 0; color: #232c5c; font-size: 1.1rem;
+`;
+
+const StatusBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: ${p => p.bg};
+  color: ${p => p.text};
+`;
+
+const DetailRow = styled.div`
+  display: flex; align-items: center; gap: 8px; color: #555; font-size: 0.95rem;
+  svg { color: #3747ec; font-size: 1.1rem; }
+`;
+
+const ServiceName = styled.p`
+  margin: 0; font-weight: 600; color: #4a5568; font-size: 1rem;
 `;
 
 const EmptyState = styled.div`
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #718096;
-  background: white;
-  border-radius: 12px;
-  grid-column: 1 / -1;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-  h3 { margin-top: 0; color: #2d3748; }
+  text-align: center; padding: 4rem; color: #888;
+  background: #fff; border-radius: 12px;
 `;
 
-// --- TARJETAS (Estilo idéntico a Home) ---
-const SalonCard = styled.div`
-  background: #fff; border-radius: 12px; overflow: hidden;
-  display: flex; flex-direction: column; min-height: 350px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
-  &:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
-`;
-const SalonImg = styled.img` width: 100%; height: 160px; object-fit: cover; `;
-const SalonContent = styled.div` padding: 1rem; flex: 1; display: flex; flex-direction: column; `;
-const SalonName = styled.h4` margin: 0 0 0.3rem; color: #232c5c; font-weight: 600; font-size: 1.1rem; `;
-const SalonDesc = styled.p` margin: 0.3rem 0; font-size: 0.9rem; color: #555; flex: 1; `;
-const SalonInfo = styled.p`
-  margin: 0.2rem 0; font-size: 0.9rem; color: #666;
-  display: flex; align-items: flex-start; gap: 8px;
-  svg { font-size: 1rem; color: #232c5c; flex-shrink: 0; margin-top: 3px; }
-`;
-const SalonBtn = styled(Link)`
-  align-self: flex-end; background: #3747ec; color: #fff; padding: 0.4rem 1rem;
-  border-radius: 6px; text-decoration: none; font-size: 0.85rem; margin-top: 0.8rem;
-`;
-
-const Footer = styled.footer`
-  background: #e3f2fd; text-align: center; padding: 1rem 0; margin-top: auto; color: #666; font-size: 0.9rem;
-`;
-
-export default function CategoryResults() {
-  const { category } = useParams();
+export default function MyAppointments() {
   const navigate = useNavigate();
   
   // --- HEADER STATES ---
@@ -280,56 +279,46 @@ export default function CategoryResults() {
   const [myBusinesses, setMyBusinesses] = useState([]);
   const [currentCity, setCurrentCity] = useState("");
 
-  // --- PAGE STATES ---
-  const [businesses, setBusinesses] = useState([]);
+  // --- APPOINTMENTS STATES ---
+  const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'history'
 
-  // Funciones de Toggle (Header)
+  // Funciones Header
   const toggleServices = (e) => { e.stopPropagation(); setActiveMenu(prev => prev === 'services' ? null : 'services'); };
   const toggleProfile = (e) => { e.stopPropagation(); setActiveMenu(prev => prev === 'profile' ? null : 'profile'); };
   const handleLogout = () => { localStorage.removeItem("token"); navigate("/", { replace: true }); };
+  const getImageUrl = (path) => path?.startsWith('http') ? path : `https://oral-susan-utt-eab6c28f.koyeb.app/${path}`;
 
-  const getImageUrl = (path, type = 'user') => {
-    if (!path) return type === 'user' ? "https://i.pravatar.cc/100" : "/placeholder.jpg";
-    if (path.startsWith('http')) return path;
-    return `https://oral-susan-utt-eab6c28f.koyeb.app/${path}`;
-  };
-
-  const truncateText = (text, limit) => {
-    if (!text) return "";
-    if (text.length <= limit) return text;
-    return text.slice(0, limit) + "...";
-  };
-
-  // --- EFFECTS ---
-
-  // 1. Auth & Location (Header)
+  // Carga Inicial
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return navigate("/", { replace: true });
-    
-    // Usuario
-    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/users/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => setUser(data))
-      .catch(() => {});
+    if (!token) return navigate("/");
 
-    // Mis Negocios (para dropdown)
-    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/mine", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => setMyBusinesses(data))
-      .catch(() => {});
+    // 1. Datos Usuario
+    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/users/me", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(setUser).catch(() => {});
 
-    // Ciudad guardada
+    // 2. Datos Header (Mis Negocios)
+    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/mine", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(setMyBusinesses).catch(() => {});
+
+    // 3. Mis Citas (Nuevo Endpoint)
+    setLoading(true);
+    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments/me", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => {
+          if (!r.ok) throw new Error("Error fetching");
+          return r.json();
+      })
+      .then(setCitas)
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+
     const savedCity = localStorage.getItem("user_city");
     if (savedCity) setCurrentCity(savedCity);
-  }, []);
+  }, [navigate]);
 
-  // 2. Click Outside (Header)
+  // Cerrar menús al hacer click fuera
   useEffect(() => {
     const isMobile = window.innerWidth <= 768;
     if (!isMobile) {
@@ -344,39 +333,39 @@ export default function CategoryResults() {
     }
   }, []);
 
-  // 3. Fetch Data Categoría
-  useEffect(() => {
-    setLoading(true);
-    const token = localStorage.getItem("token");
-    
-    fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        const filtered = data.filter(biz => {
-            let cats = [];
-            if (Array.isArray(biz.categories)) {
-                cats = biz.categories;
-            } else if (typeof biz.categories === 'string') {
-                try { cats = JSON.parse(biz.categories); } catch(e) { cats = [] }
-            }
-            return cats.includes(category);
-        });
-        setBusinesses(filtered);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [category]);
+  // Lógica de filtrado de citas (Próximas vs Historial)
+  const now = new Date();
+  // Normalizamos "hoy" a medianoche para comparar solo fechas si se desea, o timestamp completo
+  const filteredCitas = citas.filter(c => {
+      // Unir fecha y hora para comparar
+      const citaDate = new Date(`${c.date.slice(0,10)}T${c.start_time}`);
+      
+      if (activeTab === 'upcoming') {
+          return citaDate >= now && c.status !== 'cancelada';
+      } else {
+          return citaDate < now || c.status === 'cancelada';
+      }
+  });
 
-  const title = CATEGORY_NAMES[category] || "Resultados";
+  const getStatusColor = (status) => {
+      switch(status) {
+          case 'confirmada': return { bg: '#e6fffa', text: '#2c7a7b', border: '#38b2ac' };
+          case 'pendiente': return { bg: '#fffaf0', text: '#c05621', border: '#ed8936' };
+          case 'cancelada': return { bg: '#fff5f5', text: '#c53030', border: '#fc8181' };
+          default: return { bg: '#edf2f7', text: '#4a5568', border: '#cbd5e0' };
+      }
+  };
+
+  const formatDate = (dateStr, timeStr) => {
+      const date = new Date(`${dateStr.slice(0,10)}T${timeStr}`);
+      return date.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute:'2-digit' });
+  };
 
   return (
-    <>
+    <Page>
       <GlobalStyle />
-      <Page>
-        {/* --- NAVBAR INTEGRADO --- */}
-        <Header>
+      {/* HEADER INTEGRADO */}
+      <Header>
           <HeaderTop>
             <Logo to="/home">
               <svg height={36} viewBox="0 0 32 32" fill="none">
@@ -391,82 +380,56 @@ export default function CategoryResults() {
             </MobileMenuBtn>
 
             <LocationSelector>
-              <IoLocationSharp size={18} style={{ minWidth: '18px' }} />
-              <span style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: '0 4px' }}>
-                {currentCity || "Ubicación"}
-              </span>
+              <IoLocationSharp size={18} />
+              <span style={{ margin: '0 4px' }}>{currentCity || "Ubicación"}</span>
             </LocationSelector>
 
             <SearchBox>
-              <IoSearchOutline size={20} />{" "}
-              <input placeholder="Buscar..." />
+              <IoSearchOutline size={20} /> <input placeholder="Buscar..." />
             </SearchBox>
           </HeaderTop>
 
           <HeaderNav isOpen={mobileMenuOpen}>
-            <MobileCloseBtn onClick={() => setMobileMenuOpen(false)}>
-                <IoClose />
-            </MobileCloseBtn>
-
+            <MobileCloseBtn onClick={() => setMobileMenuOpen(false)}><IoClose /></MobileCloseBtn>
+            
             <MobileProfileHeader>
-                <img src={getImageUrl(user.profile_photo, 'user')} alt="avatar" />
+                <img src={getImageUrl(user.profile_photo)} alt="avatar" />
                 <div>
                     <span className="name">{user.full_name}</span>
                     <span className="role">Usuario</span>
                 </div>
             </MobileProfileHeader>
 
-            <MobileIconsItem>
-                <IconButton onClick={() => navigate("/notificaciones")}><IoNotificationsOutline size={24} /></IconButton>
-                <IconButton onClick={() => navigate("/chat")}><IoChatbubbleOutline size={24} /></IconButton>
-            </MobileIconsItem>
-
-            <NavItem as={Link} to={"/home"} onClick={() => setMobileMenuOpen(false)}>
-              Inicio
-            </NavItem>
-
+            <NavItem as={Link} to={"/home"} onClick={() => setMobileMenuOpen(false)}>Inicio</NavItem>
+            
             <NavItem
               ref={servicesBtnRef}
               onClick={toggleServices}
               isOpen={activeMenu === 'services'}
-              active={true} // Marcamos activo porque estamos en servicios
               style={{ flexDirection: 'column', alignItems: 'flex-start' }}
             >
               <div style={{display:'flex', width:'100%', justifyContent:'space-between', alignItems:'center'}}>
                   Servicios <IoChevronDown size={14} />
               </div>
-              {activeMenu === 'services' && (
-                <ServicesDropdown
-                  anchorRef={servicesBtnRef}
-                  closeMenu={() => setMobileMenuOpen(false)}
-                />
-              )}
+              {activeMenu === 'services' && <ServicesDropdown closeMenu={() => setMobileMenuOpen(false)} />}
             </NavItem>
 
-            <NavItem as={Link} to="/citas" onClick={() => setMobileMenuOpen(false)}>Citas</NavItem>
+            {/* Marcamos activo CITAS */}
+            <NavItem as={Link} to="/citas" active={true} onClick={() => setMobileMenuOpen(false)}>
+                Citas
+            </NavItem>
             
             <NavItem as={Link} to="/planes" onClick={() => setMobileMenuOpen(false)}>
               Tu negocio
             </NavItem>
 
             <MobileOnlyDiv>
-               <NavItem 
-                  onClick={toggleProfile}
-                  isOpen={activeMenu === 'profile'}
-                  style={{ flexDirection: 'column', alignItems: 'flex-start' }}
-                >
+               <NavItem onClick={toggleProfile} isOpen={activeMenu === 'profile'} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{display:'flex', width:'100%', justifyContent:'space-between', alignItems:'center'}}>
                       Mi Cuenta <IoChevronDown size={14} />
                   </div>
                   {activeMenu === 'profile' && (
-                      <UserDropdown
-                          user={user}
-                          onLogout={handleLogout}
-                          closeMenu={() => setMobileMenuOpen(false)}
-                          expanded={expandedMenu}
-                          setExpanded={setExpandedMenu}
-                          myBusinesses={myBusinesses}
-                      />
+                      <UserDropdown user={user} onLogout={handleLogout} closeMenu={() => setMobileMenuOpen(false)} expanded={expandedMenu} setExpanded={setExpandedMenu} myBusinesses={myBusinesses} />
                   )}
                </NavItem>
             </MobileOnlyDiv>
@@ -476,67 +439,75 @@ export default function CategoryResults() {
               <IconButton as={Link} to={"/chat"}><IoChatbubbleOutline /></IconButton>
               <Profile ref={profileRef}>
                 <ProfileButton onClick={toggleProfile}>
-                  <Avatar src={getImageUrl(user.profile_photo, 'user')} alt="avatar" />
+                  <Avatar src={getImageUrl(user.profile_photo)} alt="avatar" />
                   {user.full_name || "Usuario"} <IoChevronDown size={14} />
                 </ProfileButton>
                 {activeMenu === 'profile' && (
-                  <UserDropdown
-                    user={user}
-                    onLogout={handleLogout}
-                    closeMenu={() => setActiveMenu(null)}
-                    expanded={expandedMenu}
-                    setExpanded={setExpandedMenu}
-                    myBusinesses={myBusinesses}
-                  />
+                  <UserDropdown user={user} onLogout={handleLogout} closeMenu={() => setActiveMenu(null)} expanded={expandedMenu} setExpanded={setExpandedMenu} myBusinesses={myBusinesses} />
                 )}
               </Profile>
             </IconGroup>
           </HeaderNav>
         </Header>
 
-        {/* --- CONTENIDO --- */}
-        <PageContainer>
-          <HeaderRow>
-            <BackButton onClick={() => navigate(-1)}>
-              <IoArrowBack />
-            </BackButton>
-            <Title>
-              Servicios de <span>{title}</span>
-            </Title>
-          </HeaderRow>
+      {/* CONTENIDO AGENDA */}
+      <Container>
+        <PageTitle><IoCalendarOutline /> Mis Citas</PageTitle>
 
-          {loading ? (
-            <div style={{textAlign:'center', marginTop: 50, color: '#666'}}>Cargando resultados...</div>
-          ) : (
-            <Grid>
-              {businesses.length > 0 ? (
-                businesses.map((biz) => (
-                  <SalonCard key={biz.id}>
-                    <SalonImg src={getImageUrl(biz.thumbnail, 'business')} alt={biz.name} />
-                    <SalonContent>
-                      <SalonName>{biz.name}</SalonName>
-                      <SalonDesc>
-                          {biz.about ? biz.about.slice(0, 80) + "..." : "Sin descripción disponible."}
-                      </SalonDesc>
-                      <SalonInfo>
-                          <IoLocationSharp /> {truncateText(biz.address, 50) || "Ubicación no disponible"}
-                      </SalonInfo>
-                      <SalonBtn to={`/details/${biz.id}`}>Ver detalles</SalonBtn>
-                    </SalonContent>
-                  </SalonCard>
-                ))
-              ) : (
-                <EmptyState>
-                  <h3>No hay resultados</h3>
-                  <p>Aún no hay negocios registrados en la categoría <strong>{title}</strong>.</p>
-                  <Link to="/home" style={{color: '#3747ec', fontWeight: '500'}}>Volver al inicio</Link>
-                </EmptyState>
-              )}
-            </Grid>
-          )}
-        </PageContainer>
-        <Footer>© 2025 BookifyPro. Todos los derechos reservados.</Footer>
-      </Page>
-    </>
+        <TabsContainer>
+            <Tab active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')}>Próximas</Tab>
+            <Tab active={activeTab === 'history'} onClick={() => setActiveTab('history')}>Historial</Tab>
+        </TabsContainer>
+
+        {loading ? (
+            <div style={{textAlign:'center', marginTop:50, color:'#666'}}>Cargando citas...</div>
+        ) : (
+            <>
+                {filteredCitas.length > 0 ? (
+                    <AppointmentsGrid>
+                        {filteredCitas.map(cita => {
+                            const colors = getStatusColor(cita.status);
+                            return (
+                                <AppointmentCard key={cita.id} color={colors.border}>
+                                    <BizHeader>
+                                        <BizName>{cita.business_name}</BizName>
+                                        <StatusBadge bg={colors.bg} text={colors.text}>{cita.status}</StatusBadge>
+                                    </BizHeader>
+                                    
+                                    <ServiceName>{cita.service_name || cita.package_name || "Servicio General"}</ServiceName>
+                                    
+                                    <DetailRow>
+                                        <IoTimeOutline />
+                                        <span style={{textTransform:'capitalize'}}>
+                                            {formatDate(cita.date, cita.start_time)}
+                                        </span>
+                                    </DetailRow>
+
+                                    <DetailRow>
+                                        <IoStorefrontOutline />
+                                        <span>{cita.address_street} {cita.address_ext_num}, {cita.address_colony}</span>
+                                    </DetailRow>
+
+                                    {cita.specialist_name && (
+                                        <DetailRow>
+                                            <IoPersonOutline />
+                                            <span>{cita.specialist_name}</span>
+                                        </DetailRow>
+                                    )}
+                                </AppointmentCard>
+                            )
+                        })}
+                    </AppointmentsGrid>
+                ) : (
+                    <EmptyState>
+                        <h3>No tienes citas {activeTab === 'upcoming' ? 'programadas' : 'en el historial'}.</h3>
+                        <p>Explora negocios cercanos y agenda tu próxima cita.</p>
+                        <Link to="/home" style={{color:'#3747ec', fontWeight:600}}>Ir al Inicio</Link>
+                    </EmptyState>
+                )}
+            </>
+        )}
+      </Container>
+    </Page>
   );
 }

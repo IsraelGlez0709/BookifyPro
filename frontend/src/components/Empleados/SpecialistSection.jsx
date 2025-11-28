@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import SpecialistsTable from "./SpecialistsTable";
 import ModalSpecialist from "./ModalSpecialist";
 import styled from "styled-components";
@@ -44,24 +44,95 @@ export default function SpecialistsSection({ negocio }) {
   const [showModal, setShowModal] = useState(false);
   const [empleadoActivo, setEmpleadoActivo] = useState(null);
 
-  useEffect(() => {
+  // Función para cargar empleados (reutilizable)
+  const fetchEmpleados = useCallback(() => {
     if (!negocio?.id) return;
     const token = localStorage.getItem("token");
     fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/specialists?business_id=${negocio.id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
-      .then(data => setEmpleados(data))
-      .catch(() => setEmpleados([]));
-  }, [negocio, showModal]);
+      .then(data => {
+        // Aseguramos que sea un array
+        setEmpleados(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Error cargando empleados", err);
+        setEmpleados([]);
+      });
+  }, [negocio]);
 
-  const handleEdit = emp => {
-    setEmpleadoActivo(emp);
-    setShowModal(true);
+  // Carga inicial
+  useEffect(() => {
+    fetchEmpleados();
+  }, [fetchEmpleados]);
+
+  // Guardar (Crear o Editar)
+  const handleSave = async (formData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const id = formData.get("id"); // Vemos si el FormData trae ID
+
+      // Si hay ID es PUT (Editar), si no es POST (Crear)
+      const url = id 
+        ? `https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/specialists/${id}`
+        : `https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/specialists`;
+      
+      const method = id ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method: method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // NO PONER Content-Type aquí para que el navegador configure el boundary del FormData automáticamente
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        setShowModal(false);
+        setEmpleadoActivo(null);
+        fetchEmpleados(); // Recargar lista
+      } else {
+        const errorText = await res.text();
+        alert("Error al guardar: " + errorText);
+      }
+    } catch (error) {
+      console.error("Error guardando especialista:", error);
+      alert("Error de conexión al guardar.");
+    }
   };
 
-  const handleDelete = emp => {
-    if (!window.confirm("¿Eliminar empleado?")) return;
+  // Eliminar (Soft Delete - Cambiar status a inactive)
+  const handleDelete = async (emp) => {
+    if (!window.confirm(`¿Estás seguro de eliminar a ${emp.name}?`)) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Usamos la ruta de cambio de status para "borrar" lógicamente
+      const res = await fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/specialists/${emp.id}/status`, {
+        method: "PATCH",
+        headers: { 
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status: 'inactive' })
+      });
+
+      if (res.ok) {
+        fetchEmpleados();
+      } else {
+        alert("No se pudo eliminar al empleado.");
+      }
+    } catch (error) {
+      console.error("Error eliminando:", error);
+    }
+  };
+
+  const handleEdit = (emp) => {
+    setEmpleadoActivo(emp);
+    setShowModal(true);
   };
 
   return (
@@ -73,13 +144,19 @@ export default function SpecialistsSection({ negocio }) {
         </NuevoBtn>
       </HeaderRow>
 
-      <SpecialistsTable empleados={empleados} onEdit={handleEdit} onDelete={handleDelete} />
+      {/* Filtramos visualmente los inactivos si la API devuelve todos */}
+      <SpecialistsTable 
+        empleados={empleados.filter(e => e.status === 'active')} 
+        onEdit={handleEdit} 
+        onDelete={handleDelete} 
+      />
 
       <ModalSpecialist
         show={showModal}
         onClose={() => setShowModal(false)}
         especialista={empleadoActivo}
         negocio={negocio}
+        onSave={handleSave} // Pasamos la función de guardar
       />
     </SectionContainer>
   );

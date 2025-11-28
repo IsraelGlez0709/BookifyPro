@@ -222,3 +222,14 @@ export async function deleteAppointment(req, res) {
     res.status(500).json({ error: "No se pudo eliminar la cita" });
   }
 }
+
+export async function listMyAppointments(req, res) {
+  try {
+    const userId = req.user.id;
+    const citas = await Appointment.findAppointmentsByUser(userId);
+    res.json(citas);
+  } catch (err) {
+    console.error("Error al obtener mis citas:", err);
+    res.status(500).json({ error: "Error al obtener tus citas" });
+  }
+}

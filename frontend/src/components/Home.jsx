@@ -606,7 +606,7 @@ export default function Home() {
               )}
             </NavItem>
 
-            <NavItem onClick={() => setMobileMenuOpen(false)}>Citas</NavItem>
+            <NavItem as={Link} to="/citas" onClick={() => setMobileMenuOpen(false)}>Citas</NavItem>
             
             <NavItem as={Link} to="/planes" onClick={() => setMobileMenuOpen(false)}>
               Tu negocio

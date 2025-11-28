@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 
 const fadeIn = keyframes`
@@ -88,34 +88,63 @@ const BtnGuardar = styled.button`
   &:hover { background: #2330a7; }
 `;
 
-export default function ModalSpecialist({ show, onClose, especialista, negocio }) {
-  const [name, setName] = useState(especialista?.name || "");
-  const [role, setRole] = useState(especialista?.role || "");
+export default function ModalSpecialist({ show, onClose, especialista, negocio, onSave }) {
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
   const [photo, setPhoto] = useState(null);
-  const [preview, setPreview] = useState(especialista?.photo ? `https://oral-susan-utt-eab6c28f.koyeb.app/${especialista.photo.replace(/\\/g, "/")}` : null);
+  const [preview, setPreview] = useState(null);
 
   const fileRef = useRef();
 
-  // Actualiza los campos si cambia el especialista
-  React.useEffect(() => {
-    setName(especialista?.name || "");
-    setRole(especialista?.role || "");
-    setPhoto(null);
-    setPreview(especialista?.photo ? `https://oral-susan-utt-eab6c28f.koyeb.app/${especialista.photo.replace(/\\/g, "/")}` : null);
+  // Actualiza los campos al abrir o cambiar especialista
+  useEffect(() => {
+    if (show) {
+        setName(especialista?.name || "");
+        setRole(especialista?.role || "");
+        setPhoto(null);
+        // Si hay foto previa en servidor, la mostramos
+        if (especialista?.photo) {
+            setPreview(`https://oral-susan-utt-eab6c28f.koyeb.app/${especialista.photo.replace(/\\/g, "/")}`);
+        } else {
+            setPreview(null);
+        }
+    }
   }, [especialista, show]);
 
   function handlePhotoChange(e) {
     const file = e.target.files[0];
-    setPhoto(file);
-    setPreview(file ? URL.createObjectURL(file) : null);
+    if (file) {
+        setPhoto(file);
+        setPreview(URL.createObjectURL(file));
+    }
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    // Aquí puedes enviar la info al backend con fetch/FormData.
-    // Recuerda incluir negocio.id para asociarlo correctamente.
-    // Si usas FormData: append('photo', photo) etc.
-    onClose();
+    
+    // Crear FormData para enviar archivos + datos
+    const formData = new FormData();
+    formData.append("business_id", negocio.id);
+    formData.append("name", name);
+    formData.append("role", role);
+    
+    // Solo agregar foto si el usuario seleccionó una nueva
+    if (photo) {
+        formData.append("photo", photo);
+    }
+    
+    // Si es edición, mandamos el ID para que el padre sepa
+    if (especialista) {
+        formData.append("id", especialista.id);
+        // Mantenemos el status original
+        formData.append("status", especialista.status || "active");
+    } else {
+        formData.append("status", "active");
+    }
+
+    if (onSave) {
+        onSave(formData);
+    }
   }
 
   if (!show) return null;
@@ -126,19 +155,34 @@ export default function ModalSpecialist({ show, onClose, especialista, negocio }
         <BtnCerrar onClick={onClose} title="Cerrar">&times;</BtnCerrar>
         <Titulo>{especialista ? "Editar especialista" : "Nuevo especialista"}</Titulo>
         <Form onSubmit={handleSubmit} autoComplete="off">
-          <Label>Foto</Label>
-          <FotoPreview src={preview || "/default-avatar.png"} alt="Foto" onClick={() => fileRef.current.click()} style={{ cursor: "pointer" }} />
-          <Input
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            ref={fileRef}
-            onChange={handlePhotoChange}
-          />
-          <Label>Nombre</Label>
-          <Input required value={name} onChange={e => setName(e.target.value)} maxLength={40} />
-          <Label>Rol</Label>
-          <Input required value={role} onChange={e => setRole(e.target.value)} maxLength={30} />
+          <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
+            <Label>Foto de perfil</Label>
+            <FotoPreview 
+                src={preview || "/default-avatar.png"} 
+                alt="Foto" 
+                onClick={() => fileRef.current.click()} 
+                style={{ cursor: "pointer" }} 
+            />
+            <Input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                ref={fileRef}
+                onChange={handlePhotoChange}
+            />
+            <span style={{fontSize:'0.8rem', color:'#888', cursor:'pointer'}} onClick={() => fileRef.current.click()}>Cambiar foto</span>
+          </div>
+
+          <div style={{display:'flex', flexDirection:'column'}}>
+            <Label>Nombre</Label>
+            <Input required value={name} onChange={e => setName(e.target.value)} maxLength={40} placeholder="Nombre completo" />
+          </div>
+
+          <div style={{display:'flex', flexDirection:'column'}}>
+            <Label>Rol / Especialidad</Label>
+            <Input required value={role} onChange={e => setRole(e.target.value)} maxLength={30} placeholder="Ej. Barbero, Estilista" />
+          </div>
+
           <BtnGuardar type="submit">
             {especialista ? "Guardar cambios" : "Agregar especialista"}
           </BtnGuardar>

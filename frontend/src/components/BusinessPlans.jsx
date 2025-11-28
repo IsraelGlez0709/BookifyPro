@@ -526,7 +526,7 @@ export default function Planes() {
               )}
             </NavItem>
 
-            <NavItem onClick={() => setMobileMenuOpen(false)}>Citas</NavItem>
+            <NavItem as={Link} to="/citas" onClick={() => setMobileMenuOpen(false)}>Citas</NavItem>
 
             <NavItem as={Link} to="/planes" active onClick={() => setMobileMenuOpen(false)}>Tu negocio</NavItem>
 

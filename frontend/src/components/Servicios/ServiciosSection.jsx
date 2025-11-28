@@ -99,7 +99,7 @@ export default function ServiciosSection({ negocio }) {
               name: payload.name,
               price: payload.price,
               feature: payload.feature, 
-              status: payload.status // <--- CORRECCIÓN IMPORTANTE: ENVIAR STATUS
+              status: payload.status // Mantenemos el status actual
             }),
           }
         );
@@ -133,7 +133,7 @@ export default function ServiciosSection({ negocio }) {
     }
   }
 
-  // ----- Servicios: eliminar -----
+  // ----- Servicios: eliminar (SOFT DELETE / DESACTIVAR) -----
   async function handleDeleteServicio(svc) {
     if (!svc?.id) return;
     const ok = window.confirm(`¿Eliminar el servicio "${svc.name}"? Esta acción no se puede deshacer.`);
@@ -141,18 +141,28 @@ export default function ServiciosSection({ negocio }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/services/${svc.id}`, {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      
+      // CAMBIO IMPORTANTE: Usamos PATCH para cambiar status a 'inactive' en lugar de DELETE
+      const res = await fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/businesses/services/${svc.id}/status`, {
+        method: "PATCH",
+        headers: { 
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: 'inactive' })
       });
+
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || "No se pudo eliminar");
       }
+      
+      // Lo quitamos de la lista visualmente porque ya no es 'active'
       setServicios((prev) => prev.filter((s) => s.id !== svc.id));
+      
     } catch (err) {
       console.error("Error eliminando servicio", err);
-      alert("No se pudo eliminar el servicio");
+      alert("No se pudo eliminar el servicio.");
     }
   }
 
