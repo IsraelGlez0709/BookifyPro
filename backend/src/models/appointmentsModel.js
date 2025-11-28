@@ -46,6 +46,15 @@ export async function updateAppointmentStatus(id, status) {
   await db.query(`UPDATE appointments SET status = ? WHERE id = ?`, [status, id]);
 }
 
+export async function updateAppointment(id, { specialist_id, service_id, package_id, date, start_time }) {
+  await db.query(
+    `UPDATE appointments 
+     SET specialist_id = ?, service_id = ?, package_id = ?, date = ?, start_time = ?
+     WHERE id = ?`,
+    [specialist_id, service_id, package_id, date, start_time, id]
+  );
+}
+
 export async function findAppointmentById(id) {
   const [rows] = await db.query(
     `SELECT a.*,

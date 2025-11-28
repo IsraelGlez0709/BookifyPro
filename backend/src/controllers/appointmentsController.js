@@ -188,6 +188,28 @@ function buildSlots(from, to, interval = 30) {
   return out;
 }
 
+export async function editAppointment(req, res) {
+  try {
+    const { id } = req.params;
+    const {
+      specialist_id, service_id, package_id, date, start_time
+    } = req.body;
+
+    await Appointment.updateAppointment(id, {
+      specialist_id: specialist_id || null,
+      service_id: service_id || null,
+      package_id: package_id || null,
+      date,
+      start_time
+    });
+
+    res.json({ message: "Cita actualizada correctamente" });
+  } catch (err) {
+    console.error("Error editando cita:", err);
+    res.status(500).json({ error: "No se pudo actualizar la cita" });
+  }
+}
+
 export async function deleteAppointment(req, res) {
   try {
     const { id } = req.params;

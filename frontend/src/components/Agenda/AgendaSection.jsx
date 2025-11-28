@@ -8,78 +8,45 @@ import {
   IoLockClosedOutline,
   IoChevronBack,
   IoChevronForward,
-  IoLocationSharp,
 } from "react-icons/io5";
 
 const TopBar = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 2rem;
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem;
 `;
-const LeftSide = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-const BusinessTitle = styled.b`
-  font-size: 2rem;
-  color: #232c5c;
-  margin-bottom: 0.5rem;
-`;
-const DateSelector = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-const ButtonsRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
+const LeftSide = styled.div` display: flex; flex-direction: column; `;
+const BusinessTitle = styled.b` font-size: 2rem; color: #232c5c; margin-bottom: 0.5rem; `;
+const DateSelector = styled.div` display: flex; align-items: center; gap: 1rem; `;
+const ButtonsRow = styled.div` display: flex; align-items: center; gap: 16px; `;
 const Boton = styled.button`
   background: ${(p) => (p.secondary ? "#f5c065" : "#353839")};
   color: ${(p) => (p.secondary ? "#232c5c" : "#fff")};
-  border: none;
-  padding: 10px 18px;
-  border-radius: 9px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 1rem;
-  box-shadow: 0 2px 8px #232c5c12;
-  transition: background 0.18s;
-  &:hover {
-    background: ${(p) => (p.secondary ? "#e7b253" : "#242124")};
-  }
+  border: none; padding: 10px 18px; border-radius: 9px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 7px; font-size: 1rem;
+  box-shadow: 0 2px 8px #232c5c12; transition: background 0.18s;
+  &:hover { background: ${(p) => (p.secondary ? "#e7b253" : "#242124")}; }
 `;
 const StyledInputDate = styled.input`
-  font-family: "Poppins";
-  font-size: 15px;
-  padding: 10px 16px;
-  border-radius: 9px;
-  border: 1px solid #e3e9f7;
-  background: #fff;
-  color: #232c5c;
-  outline: none;
+  font-family: "Poppins"; font-size: 15px; padding: 10px 16px; border-radius: 9px;
+  border: 1px solid #e3e9f7; background: #fff; color: #232c5c; outline: none;
 `;
 
 export default function AgendaSection({ negocio }) {
-  const [fecha, setFecha] = useState(() =>
-    new Date().toISOString().substr(0, 10)
-  );
+  const [fecha, setFecha] = useState(() => new Date().toISOString().substr(0, 10));
   const [modalCita, setModalCita] = useState(false);
   const [modalBloqueo, setModalBloqueo] = useState(false);
   const [citas, setCitas] = useState([]);
   const [todasLasCitas, setTodasLasCitas] = useState([]);
 
+  // Estados para la modal
   const [negocioFull, setNegocioFull] = useState(null);
   const [selDay, setSelDay] = useState();
   const [selTime, setSelTime] = useState();
   const [selSpec, setSelSpec] = useState();
   const [selSvc, setSelSvc] = useState();
   const [diasDisponibles, setDiasDisponibles] = useState([]);
+  
+  // Estado para saber si estamos editando
+  const [citaAEditar, setCitaAEditar] = useState(null);
 
   useEffect(() => {
     if (!negocio?.id) return;
@@ -92,13 +59,11 @@ export default function AgendaSection({ negocio }) {
       .catch(() => setNegocioFull(null));
   }, [negocio]);
 
+  // Generar días disponibles
   useEffect(() => {
     if (negocioFull && negocioFull.schedules) {
       const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-      const mesesAbrev = [
-        "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-        "Jul", "Ago", "Sept", "Oct", "Nov", "Dic",
-      ];
+      const mesesAbrev = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sept", "Oct", "Nov", "Dic"];
       const hoy = new Date();
       let resultados = [];
       let diasAgregados = 0;
@@ -112,9 +77,7 @@ export default function AgendaSection({ negocio }) {
           return dbShort === diaNombre.toLowerCase();
         });
         if (scheduleObj) {
-          const label = `${diaNombre}, ${fechaTemp.getDate()} ${
-            mesesAbrev[fechaTemp.getMonth()]
-          }`;
+          const label = `${diaNombre}, ${fechaTemp.getDate()} ${mesesAbrev[fechaTemp.getMonth()]}`;
           resultados.push({
             label,
             date: fechaTemp.toISOString().slice(0, 10),
@@ -127,31 +90,24 @@ export default function AgendaSection({ negocio }) {
       }
       setDiasDisponibles(resultados);
 
-      if (resultados.length) {
+      // Si NO estamos editando, seleccionamos el primer día por defecto
+      if (resultados.length && !citaAEditar) {
         setSelDay(resultados[0].date);
-        const h =
-          generarHoras(
-            resultados[0].scheduleObj.from,
-            resultados[0].scheduleObj.to
-          )[0] || "";
+        const h = generarHoras(resultados[0].scheduleObj.from, resultados[0].scheduleObj.to)[0] || "";
         setSelTime(h);
-        if (negocioFull.specialists?.length)
-          setSelSpec(negocioFull.specialists[0].name);
-        if (negocioFull.services?.length)
-          setSelSvc(negocioFull.services[0].name);
+        if (negocioFull.specialists?.length) setSelSpec(negocioFull.specialists[0].name);
+        if (negocioFull.services?.length) setSelSvc(negocioFull.services[0].name);
       }
     }
-  }, [negocioFull]);
+  }, [negocioFull, citaAEditar]); // Dependencia citaAEditar agregada para no resetear al editar
 
   function generarHoras(from, to, intervalo = 30) {
     if (!from || !to) return [];
     const horas = [];
     let [h, m] = from.split(":").map(Number);
     let [hTo, mTo] = to.split(":").map(Number);
-
     const dFrom = new Date(0, 0, 0, h, m);
     const dTo = new Date(0, 0, 0, hTo, mTo);
-
     while (dFrom <= dTo) {
       let hourStr = dFrom.getHours().toString().padStart(2, "0");
       let minStr = dFrom.getMinutes().toString().padStart(2, "0");
@@ -172,9 +128,7 @@ export default function AgendaSection({ negocio }) {
     const token = localStorage.getItem("token");
     const res = await fetch(
       `https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments/business/${negocio.id}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     if (res.ok) {
       const data = await res.json();
@@ -184,10 +138,9 @@ export default function AgendaSection({ negocio }) {
     }
   }
 
-  useEffect(() => {
-    fetchCitas();
-  }, [negocio]);
+  useEffect(() => { fetchCitas(); }, [negocio]);
 
+  // Filtrado para la tabla visual
   useEffect(() => {
     const citasFiltradas = todasLasCitas
       .filter((cita) => {
@@ -197,43 +150,33 @@ export default function AgendaSection({ negocio }) {
       .map((cita) => {
         let fechaSolo = cita.date?.slice(0, 10);
         let horaSolo = cita.start_time?.slice(0, 5);
-        let fechaYHoraISO =
-          fechaSolo && horaSolo ? `${fechaSolo}T${horaSolo}` : null;
+        let fechaYHoraISO = fechaSolo && horaSolo ? `${fechaSolo}T${horaSolo}` : null;
         let fechaYHora = fechaYHoraISO ? new Date(fechaYHoraISO) : null;
-
         let opcionesFecha = { day: "numeric", month: "long" };
-        let opcionesHora = {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        };
-
-        let diaBonito = fechaYHora
-          ? fechaYHora.toLocaleDateString("es-MX", opcionesFecha)
-          : "-";
-        let horaBonita = fechaYHora
-          ? fechaYHora.toLocaleTimeString("es-MX", opcionesHora)
-          : "-";
+        let opcionesHora = { hour: "2-digit", minute: "2-digit", hour12: false };
+        let diaBonito = fechaYHora ? fechaYHora.toLocaleDateString("es-MX", opcionesFecha) : "-";
+        let horaBonita = fechaYHora ? fechaYHora.toLocaleTimeString("es-MX", opcionesHora) : "-";
 
         return {
           id: cita.id,
           cliente: cita.cliente || "N/A",
           diaYHora: `${diaBonito} a las ${horaBonita}`,
-          servicio: cita.servicio || "-",
-          paquete: cita.paquete || "-",
-          especialista: cita.especialista || "-",
+          // Usamos los nombres que vienen del join en el modelo
+          servicio: cita.service_name || "-",
+          paquete: cita.package_name || "-",
+          especialista: cita.specialist_name || "-",
           estado: cita.status,
         };
       });
-
     setCitas(citasFiltradas);
   }, [todasLasCitas, fecha]);
 
-  async function agregarCita() {
+  // GUARDAR (CREAR O EDITAR)
+  async function guardarCita() {
     const token = localStorage.getItem("token");
     const specialist = negocioFull.specialists.find((s) => s.name === selSpec);
     const service = negocioFull.services.find((s) => s.name === selSvc);
-    const packageObj = negocioFull.packages.find((p) => p.name === selSvc);
+    const packageObj = negocioFull.packages.find((p) => p.name === selSvc); // OJO: Si se llaman igual puede haber conflicto, mejor IDs únicos en select
 
     const body = {
       business_id: negocioFull.id,
@@ -246,8 +189,16 @@ export default function AgendaSection({ negocio }) {
       notes: "",
     };
 
-    const res = await fetch("https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments", {
-      method: "POST",
+    let url = "[https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments](https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments)";
+    let method = "POST";
+
+    if (citaAEditar) {
+      url = `https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments/${citaAEditar.id}`;
+      method = "PUT";
+    }
+
+    const res = await fetch(url, {
+      method: method,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -257,36 +208,37 @@ export default function AgendaSection({ negocio }) {
 
     if (res.ok) {
       setModalCita(false);
+      setCitaAEditar(null); // Limpiar edición
       fetchCitas();
     } else {
       const err = await res.json();
-      alert("Error al reservar: " + err.error);
+      alert("Error: " + err.error);
     }
   }
 
-  // --- LÓGICA DE ELIMINAR ---
   const eliminarCita = async (cita) => {
     if (!window.confirm("¿Seguro que deseas eliminar esta cita?")) return;
-    
     const token = localStorage.getItem("token");
-    // Asumimos que tienes una ruta DELETE /api/appointments/:id
     const res = await fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments/${cita.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
     });
-
-    if (res.ok) {
-        fetchCitas();
-    } else {
-        alert("No se pudo eliminar la cita.");
-    }
+    if (res.ok) fetchCitas();
+    else alert("No se pudo eliminar la cita.");
   };
 
-  // --- LÓGICA DE EDITAR (Placeholder) ---
-  const editarCita = (cita) => {
-    // Aquí deberías buscar la cita completa en 'todasLasCitas' usando cita.id
-    // Setear los estados selDay, selTime, etc. y abrir el modal
-    alert(`Editar cita de ${cita.cliente}. (Funcionalidad pendiente de implementar modal con datos)`);
+  const handleEditarClick = (citaVisual) => {
+    // Buscamos la data cruda en 'todasLasCitas' usando el ID
+    const rawCita = todasLasCitas.find(c => c.id === citaVisual.id);
+    if (!rawCita) return;
+
+    setCitaAEditar(rawCita); // Guardamos la cita a editar
+    setModalCita(true); // Abrimos modal
+  };
+
+  const handleNuevaCita = () => {
+    setCitaAEditar(null); // Modo crear
+    setModalCita(true);
   };
 
   return (
@@ -295,25 +247,13 @@ export default function AgendaSection({ negocio }) {
         <LeftSide>
           <BusinessTitle>{negocio.name}</BusinessTitle>
           <DateSelector>
-            <Boton onClick={() => cambiarDia(-1)} title="Día anterior">
-              <IoChevronBack />
-            </Boton>
-            <StyledInputDate
-              type="date"
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-            />
-            <Boton onClick={() => cambiarDia(1)} title="Día siguiente">
-              <IoChevronForward />
-            </Boton>
+            <Boton onClick={() => cambiarDia(-1)} title="Día anterior"><IoChevronBack /></Boton>
+            <StyledInputDate type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            <Boton onClick={() => cambiarDia(1)} title="Día siguiente"><IoChevronForward /></Boton>
           </DateSelector>
         </LeftSide>
         <ButtonsRow>
-          <Boton
-            onClick={() => {
-              if (negocioFull) setModalCita(true);
-            }}
-          >
+          <Boton onClick={handleNuevaCita}>
             <IoAddCircleOutline /> Nueva cita
           </Boton>
           <Boton secondary onClick={() => setModalBloqueo(true)}>
@@ -324,36 +264,28 @@ export default function AgendaSection({ negocio }) {
 
       <AgendaList 
         citas={citas} 
-        onDelete={eliminarCita} // Pasamos la función
-        onEdit={editarCita}     // Pasamos la función
+        onDelete={eliminarCita} 
+        onEdit={handleEditarClick} 
       />
 
       {modalCita && negocioFull && (
         <ModalCita
           show={modalCita}
-          onClose={() => setModalCita(false)}
+          onClose={() => { setModalCita(false); setCitaAEditar(null); }}
           negocio={negocioFull}
           diasDisponibles={diasDisponibles}
-          selDay={selDay}
-          setSelDay={setSelDay}
-          selTime={selTime}
-          setSelTime={setSelTime}
-          selSpec={selSpec}
-          setSelSpec={setSelSpec}
-          selSvc={selSvc}
-          setSelSvc={setSelSvc}
+          selDay={selDay} setSelDay={setSelDay}
+          selTime={selTime} setSelTime={setSelTime}
+          selSpec={selSpec} setSelSpec={setSelSpec}
+          selSvc={selSvc} setSelSvc={setSelSvc}
           generarHoras={generarHoras}
-          IoLocationSharp={IoLocationSharp}
-          onConfirm={agregarCita}
+          onConfirm={guardarCita}
+          citaAEditar={citaAEditar} // Pasamos la cita a editar al modal
         />
       )}
 
       {modalBloqueo && (
-        <ModalBloqueo
-          fecha={fecha}
-          onClose={() => setModalBloqueo(false)}
-          onSave={(bloqueo) => setModalBloqueo(false)}
-        />
+        <ModalBloqueo fecha={fecha} onClose={() => setModalBloqueo(false)} onSave={() => setModalBloqueo(false)} />
       )}
     </div>
   );
