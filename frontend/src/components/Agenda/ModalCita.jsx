@@ -79,15 +79,6 @@ export default function ModalCita({
   IoLocationSharp,
   onConfirm,
 }) {
-  // ----- DEBUG -----
-  // Quita esto después de revisar, ayuda a ver si llega bien lo que necesitas
-  console.log({
-    diasDisponibles,
-    services: negocio?.services,
-    specialists: negocio?.specialists,
-    packages: negocio?.packages
-  });
-
   const diasRef = useRef();
   const horasRef = useRef();
   let isDownDias = false, startXDias = 0, scrollLeftDias = 0;
@@ -97,6 +88,19 @@ export default function ModalCita({
   const specialists = negocio?.specialists || [];
   const packages = negocio?.packages || [];
 
+  // --- SOLUCIÓN AL ERROR DE OBJETO ---
+  const formatAddress = (addr) => {
+    if (!addr) return "";
+    if (typeof addr === "string") return addr; // Si ya es texto, retornarlo
+    // Si es objeto, concatenar sus partes
+    return [
+      addr.street, 
+      addr.extNum, 
+      addr.colony, 
+      addr.city
+    ].filter(Boolean).join(", ");
+  };
+
   if (!show) return null;
 
   return (
@@ -105,8 +109,10 @@ export default function ModalCita({
         <CloseButton onClick={onClose}><IoClose /></CloseButton>
         <SectionTitle>{negocio?.name || "Nueva cita"}</SectionTitle>
         <Subtitle>{negocio?.about || ""}</Subtitle>
+        
+        {/* Aquí usamos la función segura para la dirección */}
         <InfoRow>
-          <IoLocationSharp /> {negocio?.address || ""}
+          <IoLocationSharp /> {formatAddress(negocio?.address)}
         </InfoRow>
 
         {/* Días */}
@@ -189,7 +195,7 @@ export default function ModalCita({
               onClick={() => setSelSpec(sp.name)}
             >
               <SpecPickImg
-                src={`https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}`}
+                src={sp.photo ? `https://oral-susan-utt-eab6c28f.koyeb.app/${sp.photo}` : "https://via.placeholder.com/60"}
                 alt={sp.name}
                 active={selSpec === sp.name}
               />
@@ -223,7 +229,7 @@ export default function ModalCita({
         <ConfirmBtn
           onClick={() => {
             onConfirm && onConfirm();
-            onClose();
+            // No cerramos aquí, dejamos que el padre cierre tras éxito
           }}
         >
           Confirmar Reserva

@@ -15,6 +15,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccess from "./components/PaymentSuccess";
 import PaymentCancel from "./components/PaymentCancel";
 import ChatPage from "./components/Chat/ChatPage";
+import CategoryResults from "./components/CategoryResults";
 
 function App() {
   const token = localStorage.getItem("token");
@@ -64,6 +65,7 @@ function App() {
         <Route path="/pago-exitoso" element={<PaymentSuccess />} />
         <Route path="/pago-cancelado" element={<PaymentCancel />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/servicios/:category" element={<CategoryResults />} />
       </Routes>
     </Router>
   );

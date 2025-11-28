@@ -96,18 +96,8 @@ export default function AgendaSection({ negocio }) {
     if (negocioFull && negocioFull.schedules) {
       const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
       const mesesAbrev = [
-        "Ene",
-        "Feb",
-        "Mar",
-        "Abr",
-        "May",
-        "Jun",
-        "Jul",
-        "Ago",
-        "Sept",
-        "Oct",
-        "Nov",
-        "Dic",
+        "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+        "Jul", "Ago", "Sept", "Oct", "Nov", "Dic",
       ];
       const hoy = new Date();
       let resultados = [];
@@ -274,6 +264,31 @@ export default function AgendaSection({ negocio }) {
     }
   }
 
+  // --- LÓGICA DE ELIMINAR ---
+  const eliminarCita = async (cita) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta cita?")) return;
+    
+    const token = localStorage.getItem("token");
+    // Asumimos que tienes una ruta DELETE /api/appointments/:id
+    const res = await fetch(`https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments/${cita.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+        fetchCitas();
+    } else {
+        alert("No se pudo eliminar la cita.");
+    }
+  };
+
+  // --- LÓGICA DE EDITAR (Placeholder) ---
+  const editarCita = (cita) => {
+    // Aquí deberías buscar la cita completa en 'todasLasCitas' usando cita.id
+    // Setear los estados selDay, selTime, etc. y abrir el modal
+    alert(`Editar cita de ${cita.cliente}. (Funcionalidad pendiente de implementar modal con datos)`);
+  };
+
   return (
     <div>
       <TopBar>
@@ -307,7 +322,11 @@ export default function AgendaSection({ negocio }) {
         </ButtonsRow>
       </TopBar>
 
-      <AgendaList citas={citas} />
+      <AgendaList 
+        citas={citas} 
+        onDelete={eliminarCita} // Pasamos la función
+        onEdit={editarCita}     // Pasamos la función
+      />
 
       {modalCita && negocioFull && (
         <ModalCita

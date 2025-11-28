@@ -50,7 +50,8 @@ const ActionButton = styled.button`
   }
 `;
 
-export default function AgendaList({ citas, onEdit }) {
+// ACEPTAMOS onDelete EN LAS PROPS
+export default function AgendaList({ citas, onEdit, onDelete }) {
   return (
     <Table>
       <thead>
@@ -88,8 +89,10 @@ export default function AgendaList({ citas, onEdit }) {
                 >
                   <IoPencilOutline />
                 </ActionButton>
+                {/* AGREGAMOS EL ONCLICK A ELIMINAR */}
                 <ActionButton
                   tipo="delete"
+                  onClick={() => onDelete && onDelete(cita)}
                   title="Eliminar"
                 >
                   <IoTrashOutline />

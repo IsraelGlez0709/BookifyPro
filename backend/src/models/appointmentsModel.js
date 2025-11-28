@@ -127,3 +127,8 @@ export async function findScheduleForDay({ businessId, weekday }) {
   );
   return rows[0] || null;
 }
+
+export async function deleteAppointmentById(id) {
+  await db.query('DELETE FROM appointments WHERE id = ?', [id]);
+}
+

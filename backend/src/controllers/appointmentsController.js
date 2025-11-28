@@ -187,3 +187,16 @@ function buildSlots(from, to, interval = 30) {
   }
   return out;
 }
+
+export async function deleteAppointment(req, res) {
+  try {
+    const { id } = req.params;
+
+    await Appointment.deleteAppointmentById(id);
+
+    res.json({ message: "Cita eliminada correctamente" });
+  } catch (err) {
+    console.error("Error eliminando cita:", err);
+    res.status(500).json({ error: "No se pudo eliminar la cita" });
+  }
+}

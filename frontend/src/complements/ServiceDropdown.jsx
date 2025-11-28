@@ -1,20 +1,23 @@
+// src/complements/ServiceDropdown.jsx
 import React, { useRef, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 
+// ESTAS DEBEN SER IDÉNTICAS A LAS DEL REGISTRO
 const SERVICES = [
-  { name: "Cortes",     link: "/servicios/cortes" },
-  { name: "Maquillaje", link: "/servicios/maquillaje" },
-  { name: "Barbería",   link: "/servicios/barberia" },
-  { name: "Masaje",     link: "/servicios/masaje" },
-  { name: "Uñas",       link: "/servicios/unas" },
+  { id: "cortes", label: "Cortes de Cabello" },
+  { id: "barberia", label: "Barbería / Barba" },
+  { id: "maquillaje", label: "Maquillaje" },
+  { id: "masaje", label: "Masajes / Spa" },
+  { id: "unas", label: "Uñas / Manicure" },
+  { id: "cejas", label: "Cejas / Pestañas" }
 ];
 
 const DropdownBox = styled.div`
   position: absolute;
   top: 50px;
   left: -3rem;
-  min-width: 190px;
+  min-width: 220px; /* Un poco más ancho para textos largos */
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 6px 24px rgba(30,60,180,0.11);
@@ -26,7 +29,6 @@ const DropdownBox = styled.div`
     100% { transform: translateY(0); opacity: 1; }
   }
 
-  /* --- MÓVIL: Estilo acordeón sin padding extra --- */
   @media (max-width: 768px) {
     position: relative;
     top: 0; left: 0;
@@ -34,7 +36,7 @@ const DropdownBox = styled.div`
     min-width: auto;
     box-shadow: none;
     background: transparent;
-    padding: 0; /* Padding 0 para alinear a la izquierda */
+    padding: 0; 
     animation: none;
   }
 `;
@@ -45,7 +47,7 @@ const MenuList = styled.ul`
 
 const MenuItem = styled.li`
   padding: 0.7rem 1.4rem;
-  font-size: 1.04rem;
+  font-size: 0.95rem;
   color: #232C5C;
   cursor: pointer;
   border-left: 3px solid transparent;
@@ -56,10 +58,9 @@ const MenuItem = styled.li`
     border-left: 3px solid #3747EC;
   }
 
-  /* --- MÓVIL --- */
   @media (max-width: 768px) {
     color: #ccc;
-    padding: 0.5rem 0; /* Menos padding vertical */
+    padding: 0.8rem 0; 
     &:hover {
         background: rgba(255,255,255,0.1);
         color: #fff;
@@ -90,14 +91,15 @@ export default function ServicesDropdown({ closeMenu }) {
       <MenuList>
         {SERVICES.map((svc) => (
           <MenuItem
-            key={svc.name}
+            key={svc.id}
             onClick={(e) => {
-              e.stopPropagation(); // Detenemos propagación aquí también
+              e.stopPropagation(); 
               closeMenu();
-              navigate(svc.link);
+              // Navegamos usando el ID de la categoría
+              navigate(`/servicios/${svc.id}`);
             }}
           >
-            {svc.name}
+            {svc.label}
           </MenuItem>
         ))}
       </MenuList>
