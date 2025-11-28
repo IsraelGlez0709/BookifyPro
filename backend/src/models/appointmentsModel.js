@@ -1,6 +1,7 @@
 import { db } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 
+// --- CREAR ---
 export async function createAppointment({id, 
   business_id, specialist_id, user_id, service_id = null, package_id = null,
   date, start_time, end_time = null, status = 'pendiente', notes = null
@@ -15,6 +16,7 @@ export async function createAppointment({id,
   return { id: appointmentId };
 }
 
+// --- LISTAR POR NEGOCIO ---
 export async function listAppointmentsByBusiness(business_id) {
   const [rows] = await db.query(
     `
@@ -28,9 +30,9 @@ export async function listAppointmentsByBusiness(business_id) {
       ap.service_id,
       ap.package_id,
       u.full_name AS cliente,
-      s.name      AS service_name,    -- Estandarizado
-      p.name      AS package_name,    -- Estandarizado
-      sp.name     AS specialist_name  -- Estandarizado
+      s.name      AS service_name,
+      p.name      AS package_name,
+      sp.name     AS specialist_name
     FROM appointments ap
     LEFT JOIN users u          ON u.id = ap.user_id
     LEFT JOIN services s       ON s.id = ap.service_id
@@ -44,10 +46,35 @@ export async function listAppointmentsByBusiness(business_id) {
   return rows;
 }
 
+// --- LISTAR MIS CITAS (USUARIO) - CORREGIDA ---
+export async function findAppointmentsByUser(userId) {
+  // Quitamos 'amount_cents' por seguridad si no existe en la tabla appointments
+  const [rows] = await db.query(
+    `SELECT 
+        a.id, a.date, a.start_time, a.status,
+        b.name AS business_name, 
+        b.address_street, b.address_ext_num, b.address_colony, b.address_city,
+        s.name AS service_name,
+        p.name AS package_name,
+        sp.name AS specialist_name
+     FROM appointments a
+     JOIN businesses b ON a.business_id = b.id
+     LEFT JOIN services s ON a.service_id = s.id
+     LEFT JOIN packages p ON a.package_id = p.id
+     LEFT JOIN specialists sp ON a.specialist_id = sp.id
+     WHERE a.user_id = ?
+     ORDER BY a.date DESC, a.start_time ASC`,
+    [userId]
+  );
+  return rows;
+}
+
+// --- ACTUALIZAR ESTADO ---
 export async function updateAppointmentStatus(id, status) {
   await db.query(`UPDATE appointments SET status = ? WHERE id = ?`, [status, id]);
 }
 
+// --- EDITAR CITA ---
 export async function updateAppointment(id, { specialist_id, service_id, package_id, date, start_time }) {
   await db.query(
     `UPDATE appointments 
@@ -57,6 +84,7 @@ export async function updateAppointment(id, { specialist_id, service_id, package
   );
 }
 
+// --- BUSCAR UNA POR ID ---
 export async function findAppointmentById(id) {
   const [rows] = await db.query(
     `SELECT a.*,
@@ -76,6 +104,7 @@ export async function findAppointmentById(id) {
   return rows[0] || null;
 }
 
+// --- LISTAR HOY ---
 export async function listAppointmentsForToday(business_id) {
   const [rows] = await db.query(
     `
@@ -102,6 +131,7 @@ export async function listAppointmentsForToday(business_id) {
   return rows;
 }
 
+// --- OCUPACIÓN ---
 export async function findOccupiedSlots({ businessId, date, specialistId }) {
   let sql = `
     SELECT start_time
@@ -123,6 +153,7 @@ export async function findOccupiedSlots({ businessId, date, specialistId }) {
   ));
 }
 
+// --- HORARIO NEGOCIO ---
 export async function findScheduleForDay({ businessId, weekday }) {
   const [rows] = await db.query(
     `
@@ -139,27 +170,7 @@ export async function findScheduleForDay({ businessId, weekday }) {
   return rows[0] || null;
 }
 
+// --- ELIMINAR ---
 export async function deleteAppointmentById(id) {
   await db.query('DELETE FROM appointments WHERE id = ?', [id]);
-}
-
-export async function findAppointmentsByUser(userId) {
-  const [rows] = await db.query(
-    `SELECT 
-        a.id, a.date, a.start_time, a.status, a.amount_cents,
-        b.name AS business_name, 
-        b.address_street, b.address_ext_num, b.address_colony, b.address_city,
-        s.name AS service_name,
-        p.name AS package_name,
-        sp.name AS specialist_name
-     FROM appointments a
-     JOIN businesses b ON a.business_id = b.id
-     LEFT JOIN services s ON a.service_id = s.id
-     LEFT JOIN packages p ON a.package_id = p.id
-     LEFT JOIN specialists sp ON a.specialist_id = sp.id
-     WHERE a.user_id = ?
-     ORDER BY a.date DESC, a.start_time ASC`,
-    [userId]
-  );
-  return rows;
 }
