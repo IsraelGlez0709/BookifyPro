@@ -98,7 +98,8 @@ export default function ServiciosSection({ negocio }) {
             body: JSON.stringify({
               name: payload.name,
               price: payload.price,
-              feature: payload.feature, // opcional (reemplaza la única característica)
+              feature: payload.feature, 
+              status: payload.status // <--- CORRECCIÓN IMPORTANTE: ENVIAR STATUS
             }),
           }
         );
@@ -116,7 +117,7 @@ export default function ServiciosSection({ negocio }) {
             business_id: negocio.id,
             name: payload.name,
             price: payload.price,
-            feature: payload.feature, // opcional
+            feature: payload.feature,
           }),
         });
         if (!res.ok) throw new Error(await res.text());

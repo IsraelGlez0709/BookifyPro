@@ -8,7 +8,7 @@ import {
   IoLockClosedOutline,
   IoChevronBack,
   IoChevronForward,
-  IoLocationSharp, // <-- AQUI ESTA EL ICONO QUE PEDISTE
+  IoLocationSharp,
 } from "react-icons/io5";
 
 const TopBar = styled.div` display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; `;
@@ -120,7 +120,7 @@ export default function AgendaSection({ negocio }) {
 
   useEffect(() => { fetchCitas(); }, [negocio]);
 
-  // --- FILTRADO VISUAL (AQUI ESTABA EL ERROR, YA ESTA CORREGIDO) ---
+  // Filtrado visual
   useEffect(() => {
     const citasFiltradas = todasLasCitas
       .filter((cita) => {
@@ -141,10 +141,10 @@ export default function AgendaSection({ negocio }) {
           id: cita.id,
           cliente: cita.cliente || "N/A",
           diaYHora: `${diaBonito} a las ${horaBonita}`,
-          // --- CORRECCIÓN: Usamos tus nombres originales ---
-          servicio: cita.servicio || "-",
-          paquete: cita.paquete || "-",
-          especialista: cita.especialista || "-",
+          // Nombres estandarizados
+          servicio: cita.service_name || "-",
+          paquete: cita.package_name || "-",
+          especialista: cita.specialist_name || "-",
           estado: cita.status,
         };
       });
@@ -188,7 +188,7 @@ export default function AgendaSection({ negocio }) {
 
     if (res.ok) {
       setModalCita(false);
-      setCitaAEditar(null); // Limpiar modo edición
+      setCitaAEditar(null);
       fetchCitas();
     } else {
       const err = await res.json();
@@ -223,7 +223,6 @@ export default function AgendaSection({ negocio }) {
     }
     if (negocioFull?.specialists?.length) setSelSpec(negocioFull.specialists[0].name);
     if (negocioFull?.services?.length) setSelSvc(negocioFull.services[0].name);
-    
     setModalCita(true);
   };
 
@@ -260,13 +259,15 @@ export default function AgendaSection({ negocio }) {
           onClose={() => { setModalCita(false); setCitaAEditar(null); }}
           negocio={negocioFull}
           diasDisponibles={diasDisponibles}
+          // Pasamos todasLasCitas para calcular ocupación
+          todasLasCitas={todasLasCitas} 
+          
           selDay={selDay} setSelDay={setSelDay}
           selTime={selTime} setSelTime={setSelTime}
           selSpec={selSpec} setSelSpec={setSelSpec}
           selSvc={selSvc} setSelSvc={setSelSvc}
           generarHoras={generarHoras}
-          // PASAMOS EL ICONO AQUI, QUE ES LO QUE FALTABA
-          IoLocationSharp={IoLocationSharp} 
+          IoLocationSharp={IoLocationSharp}
           onConfirm={guardarCita}
           citaAEditar={citaAEditar}
         />

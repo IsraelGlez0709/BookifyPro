@@ -1,4 +1,3 @@
-// src/models/serviceModel.js
 import { db } from '../db.js';
 
 export async function createService({ id, business_id, name, price }) {
@@ -10,6 +9,7 @@ export async function createService({ id, business_id, name, price }) {
     [id, business_id, name, p]
   );
 }
+
 export async function listServices(business_id) {
   const [rows] = await db.query(
     `SELECT id, name, price, status FROM services WHERE business_id = ? AND status = 'active'`,
@@ -18,11 +18,20 @@ export async function listServices(business_id) {
   return rows;
 }
 
+// --- FUNCIÓN BLINDADA CONTRA NULOS ---
 export async function updateService({ id, name, price, status }) {
-  await db.query(
-    `UPDATE services SET name = ?, price = ?, status = ? WHERE id = ?`,
-    [name, price, status, id]
-  );
+  // Si status es undefined, no tocamos esa columna para evitar ponerla en NULL
+  if (status === undefined) {
+    await db.query(
+      `UPDATE services SET name = ?, price = ? WHERE id = ?`,
+      [name, price, id]
+    );
+  } else {
+    await db.query(
+      `UPDATE services SET name = ?, price = ?, status = ? WHERE id = ?`,
+      [name, price, status, id]
+    );
+  }
 }
 
 export async function deactivateService(id, status) {

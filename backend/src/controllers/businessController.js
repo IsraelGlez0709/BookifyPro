@@ -299,7 +299,7 @@ export async function updateService(req, res) {
     }
 
     const features = await Feature.listServiceFeatures(id);
-    res.json({ id, name, price, status, features });
+    res.json({ id, name, price, status: status || 'active', features });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al actualizar servicio" });
