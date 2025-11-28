@@ -1,4 +1,3 @@
-// src/models/appointmentsModel.js
 import { db } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -25,10 +24,13 @@ export async function listAppointmentsByBusiness(business_id) {
       ap.start_time,
       ap.status,
       ap.notes,
+      ap.specialist_id,
+      ap.service_id,
+      ap.package_id,
       u.full_name AS cliente,
-      s.name AS servicio,
-      p.name AS paquete,
-      sp.name AS especialista
+      s.name      AS service_name,    -- Estandarizado
+      p.name      AS package_name,    -- Estandarizado
+      sp.name     AS specialist_name  -- Estandarizado
     FROM appointments ap
     LEFT JOIN users u          ON u.id = ap.user_id
     LEFT JOIN services s       ON s.id = ap.service_id
@@ -83,11 +85,11 @@ export async function listAppointmentsForToday(business_id) {
       ap.start_time,
       ap.status,
       u.full_name AS cliente,
-      s.name      AS servicio,
-      p.name      AS paquete,
-      sp.name     AS especialista
+      s.name      AS service_name,
+      p.name      AS package_name,
+      sp.name     AS specialist_name
     FROM appointments ap
-    LEFT JOIN users       u  ON u.id  = ap.user_id
+    LEFT JOIN users     u  ON u.id  = ap.user_id
     LEFT JOIN services    s  ON s.id  = ap.service_id
     LEFT JOIN packages    p  ON p.id  = ap.package_id
     LEFT JOIN specialists sp ON sp.id = ap.specialist_id
@@ -115,8 +117,8 @@ export async function findOccupiedSlots({ businessId, date, specialistId }) {
   }
 
   const [rows] = await db.query(sql, args);
-  return rows.map(r => (typeof r.start_time === 'string'
-    ? r.start_time.slice(0,5)
+  return rows.map(r => (typeof r.start_time === 'string' 
+    ? r.start_time.slice(0,5) 
     : r.start_time.toString().slice(0,5)
   ));
 }
@@ -125,8 +127,8 @@ export async function findScheduleForDay({ businessId, weekday }) {
   const [rows] = await db.query(
     `
     SELECT start_time AS \`from\`, end_time AS \`to\`
-    FROM business_schedules
-    WHERE business_id = ?
+    FROM business_schedules 
+    WHERE business_id = ? 
       AND LOWER(LEFT(
         REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(day,'á','a'),'é','e'),'í','i'),'ó','o'),'ú','u')
       ,3)) = ?
@@ -140,4 +142,3 @@ export async function findScheduleForDay({ businessId, weekday }) {
 export async function deleteAppointmentById(id) {
   await db.query('DELETE FROM appointments WHERE id = ?', [id]);
 }
-

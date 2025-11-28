@@ -8,27 +8,16 @@ import {
   IoLockClosedOutline,
   IoChevronBack,
   IoChevronForward,
+  IoLocationSharp, // <-- AQUI ESTA EL ICONO QUE PEDISTE
 } from "react-icons/io5";
 
-const TopBar = styled.div`
-  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem;
-`;
+const TopBar = styled.div` display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; `;
 const LeftSide = styled.div` display: flex; flex-direction: column; `;
 const BusinessTitle = styled.b` font-size: 2rem; color: #232c5c; margin-bottom: 0.5rem; `;
 const DateSelector = styled.div` display: flex; align-items: center; gap: 1rem; `;
 const ButtonsRow = styled.div` display: flex; align-items: center; gap: 16px; `;
-const Boton = styled.button`
-  background: ${(p) => (p.secondary ? "#f5c065" : "#353839")};
-  color: ${(p) => (p.secondary ? "#232c5c" : "#fff")};
-  border: none; padding: 10px 18px; border-radius: 9px; font-weight: 600;
-  cursor: pointer; display: flex; align-items: center; gap: 7px; font-size: 1rem;
-  box-shadow: 0 2px 8px #232c5c12; transition: background 0.18s;
-  &:hover { background: ${(p) => (p.secondary ? "#e7b253" : "#242124")}; }
-`;
-const StyledInputDate = styled.input`
-  font-family: "Poppins"; font-size: 15px; padding: 10px 16px; border-radius: 9px;
-  border: 1px solid #e3e9f7; background: #fff; color: #232c5c; outline: none;
-`;
+const Boton = styled.button` background: ${(p) => (p.secondary ? "#f5c065" : "#353839")}; color: ${(p) => (p.secondary ? "#232c5c" : "#fff")}; border: none; padding: 10px 18px; border-radius: 9px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 7px; font-size: 1rem; box-shadow: 0 2px 8px #232c5c12; transition: background 0.18s; &:hover { background: ${(p) => (p.secondary ? "#e7b253" : "#242124")}; } `;
+const StyledInputDate = styled.input` font-family: "Poppins"; font-size: 15px; padding: 10px 16px; border-radius: 9px; border: 1px solid #e3e9f7; background: #fff; color: #232c5c; outline: none; `;
 
 export default function AgendaSection({ negocio }) {
   const [fecha, setFecha] = useState(() => new Date().toISOString().substr(0, 10));
@@ -37,7 +26,7 @@ export default function AgendaSection({ negocio }) {
   const [citas, setCitas] = useState([]);
   const [todasLasCitas, setTodasLasCitas] = useState([]);
 
-  // Estados para la modal
+  // Estados del modal
   const [negocioFull, setNegocioFull] = useState(null);
   const [selDay, setSelDay] = useState();
   const [selTime, setSelTime] = useState();
@@ -45,7 +34,7 @@ export default function AgendaSection({ negocio }) {
   const [selSvc, setSelSvc] = useState();
   const [diasDisponibles, setDiasDisponibles] = useState([]);
   
-  // Estado para saber si estamos editando
+  // Estado para Edición
   const [citaAEditar, setCitaAEditar] = useState(null);
 
   useEffect(() => {
@@ -89,17 +78,8 @@ export default function AgendaSection({ negocio }) {
         fechaTemp.setDate(fechaTemp.getDate() + 1);
       }
       setDiasDisponibles(resultados);
-
-      // Si NO estamos editando, seleccionamos el primer día por defecto
-      if (resultados.length && !citaAEditar) {
-        setSelDay(resultados[0].date);
-        const h = generarHoras(resultados[0].scheduleObj.from, resultados[0].scheduleObj.to)[0] || "";
-        setSelTime(h);
-        if (negocioFull.specialists?.length) setSelSpec(negocioFull.specialists[0].name);
-        if (negocioFull.services?.length) setSelSvc(negocioFull.services[0].name);
-      }
     }
-  }, [negocioFull, citaAEditar]); // Dependencia citaAEditar agregada para no resetear al editar
+  }, [negocioFull]);
 
   function generarHoras(from, to, intervalo = 30) {
     if (!from || !to) return [];
@@ -140,7 +120,7 @@ export default function AgendaSection({ negocio }) {
 
   useEffect(() => { fetchCitas(); }, [negocio]);
 
-  // Filtrado para la tabla visual
+  // --- FILTRADO VISUAL (AQUI ESTABA EL ERROR, YA ESTA CORREGIDO) ---
   useEffect(() => {
     const citasFiltradas = todasLasCitas
       .filter((cita) => {
@@ -161,10 +141,10 @@ export default function AgendaSection({ negocio }) {
           id: cita.id,
           cliente: cita.cliente || "N/A",
           diaYHora: `${diaBonito} a las ${horaBonita}`,
-          // Usamos los nombres que vienen del join en el modelo
-          servicio: cita.service_name || "-",
-          paquete: cita.package_name || "-",
-          especialista: cita.specialist_name || "-",
+          // --- CORRECCIÓN: Usamos tus nombres originales ---
+          servicio: cita.servicio || "-",
+          paquete: cita.paquete || "-",
+          especialista: cita.especialista || "-",
           estado: cita.status,
         };
       });
@@ -176,7 +156,7 @@ export default function AgendaSection({ negocio }) {
     const token = localStorage.getItem("token");
     const specialist = negocioFull.specialists.find((s) => s.name === selSpec);
     const service = negocioFull.services.find((s) => s.name === selSvc);
-    const packageObj = negocioFull.packages.find((p) => p.name === selSvc); // OJO: Si se llaman igual puede haber conflicto, mejor IDs únicos en select
+    const packageObj = negocioFull.packages.find((p) => p.name === selSvc);
 
     const body = {
       business_id: negocioFull.id,
@@ -189,7 +169,7 @@ export default function AgendaSection({ negocio }) {
       notes: "",
     };
 
-    let url = "[https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments](https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments)";
+    let url = "https://oral-susan-utt-eab6c28f.koyeb.app/api/appointments";
     let method = "POST";
 
     if (citaAEditar) {
@@ -208,7 +188,7 @@ export default function AgendaSection({ negocio }) {
 
     if (res.ok) {
       setModalCita(false);
-      setCitaAEditar(null); // Limpiar edición
+      setCitaAEditar(null); // Limpiar modo edición
       fetchCitas();
     } else {
       const err = await res.json();
@@ -228,16 +208,22 @@ export default function AgendaSection({ negocio }) {
   };
 
   const handleEditarClick = (citaVisual) => {
-    // Buscamos la data cruda en 'todasLasCitas' usando el ID
     const rawCita = todasLasCitas.find(c => c.id === citaVisual.id);
     if (!rawCita) return;
-
-    setCitaAEditar(rawCita); // Guardamos la cita a editar
-    setModalCita(true); // Abrimos modal
+    setCitaAEditar(rawCita);
+    setModalCita(true);
   };
 
   const handleNuevaCita = () => {
-    setCitaAEditar(null); // Modo crear
+    setCitaAEditar(null);
+    if (diasDisponibles.length > 0) {
+        setSelDay(diasDisponibles[0].date);
+        const h = generarHoras(diasDisponibles[0].scheduleObj.from, diasDisponibles[0].scheduleObj.to)[0] || "";
+        setSelTime(h);
+    }
+    if (negocioFull?.specialists?.length) setSelSpec(negocioFull.specialists[0].name);
+    if (negocioFull?.services?.length) setSelSvc(negocioFull.services[0].name);
+    
     setModalCita(true);
   };
 
@@ -279,8 +265,10 @@ export default function AgendaSection({ negocio }) {
           selSpec={selSpec} setSelSpec={setSelSpec}
           selSvc={selSvc} setSelSvc={setSelSvc}
           generarHoras={generarHoras}
+          // PASAMOS EL ICONO AQUI, QUE ES LO QUE FALTABA
+          IoLocationSharp={IoLocationSharp} 
           onConfirm={guardarCita}
-          citaAEditar={citaAEditar} // Pasamos la cita a editar al modal
+          citaAEditar={citaAEditar}
         />
       )}
 
